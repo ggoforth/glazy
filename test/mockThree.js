@@ -94,7 +94,7 @@ export function makeMockThree() {
     MeshStandardMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
     MeshPhysicalMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
     InstancedBufferAttribute: class { constructor(a) { this.array = a; this.needsUpdate = false; } },
-    PMREMGenerator: class { constructor() {} compileEquirectangularShader() {} fromEquirectangular() { return { texture: new Disposable() }; } dispose() {} },
+    PMREMGenerator: class { constructor() {} compileEquirectangularShader() {} fromEquirectangular() { const t = new Disposable(); t.texture = new Disposable(); return t; } dispose() {} },
     WebGLRenderer: class {
       constructor() { this.domElement = document.createElement('canvas'); this.shadowMap = {};
         this.outputColorSpace = ''; }

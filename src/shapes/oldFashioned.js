@@ -14,12 +14,9 @@ function fluteGeometry(THREE, geo, rng) {
   for (let i = 0; i < pos.count; i++) {
     v.set(pos.getX(i), pos.getY(i), pos.getZ(i));
     const ang = Math.atan2(v.z, v.x);               // around the ring (hole axis Y after rotation handled by caller)
-    const radial = Math.hypot(v.x, v.z) || 1e-6;
-    const flute = 1 + 0.06 * Math.cos(ang * FLUTES);
-    const crag = 1 + (rng() * 2 - 1) * 0.015;
-    v.x = (v.x / radial) * radial * flute * crag;
-    v.z = (v.z / radial) * radial * flute * crag;
-    pos.setXYZ(i, v.x, v.y, v.z);
+    // scale radius in/out by a 6-lobe flute plus a little per-vertex crag
+    const scale = (1 + 0.06 * Math.cos(ang * FLUTES)) * (1 + (rng() * 2 - 1) * 0.015);
+    pos.setXYZ(i, v.x * scale, v.y, v.z * scale);
   }
   pos.needsUpdate = true;
   if (geo.computeVertexNormals) geo.computeVertexNormals();

@@ -21,5 +21,5 @@ export function buildLighting(THREE, opts) {
   rim.position.set(1, 3, -4);
   group.add(rim);
 
-  return { group, fill, dispose() { /* lights hold no GPU buffers */ } };
+  return { group, dispose() { /* lights hold no GPU buffers */ } };
 }

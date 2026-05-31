@@ -6,7 +6,10 @@ export function createMotionDriver({ donut, spinner, motion }) {
   const m = motion;
   return {
     step(t, lean) {
-      if (m.spin.enabled) spinner.rotation.y += t * (m.spin.speed / 0.004) * m.spin.direction;
+      // Absolute-time assignment (like wobble/bob below) → constant angular
+      // velocity. Using += here would accelerate, since the loop feeds an
+      // ever-growing accumulated `t`.
+      if (m.spin.enabled) spinner.rotation.y = t * (m.spin.speed / 0.004) * m.spin.direction;
       const wob = m.wobble;
       const leanX = m.lean.enabled ? lean.y * m.lean.strength : 0;
       const leanZ = m.lean.enabled ? lean.x * m.lean.strength : 0;

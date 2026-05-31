@@ -15,12 +15,14 @@ function stadiumShape(THREE, len, height) {
   return s;
 }
 
-function barDripGlsl(halfLen, topY) {
-  // dripH measured downward from the top; edge waves along length (x).
+function barDripGlsl(halfLen, slabHalfH) {
+  // The frost slab's local Y spans [-slabHalfH, +slabHalfH]. Measure dripH UP
+  // from the bottom edge and discard fragments below a wavy threshold, carving
+  // a wavy poured lip along the slab's lower edge (waves along length, x).
   return `
-    float dripH = ${topY.toFixed(3)} - vLocalPos.y;
+    float dripH = vLocalPos.y + ${slabHalfH.toFixed(3)};
     float dripA = vLocalPos.x / ${halfLen.toFixed(3)};
-    float dripEdge = 0.04 + 0.05*sin(dripA*9.0) + 0.03*sin(dripA*17.0+1.1);`;
+    float dripEdge = 0.05 + 0.05*sin(dripA*9.0) + 0.03*sin(dripA*17.0+1.1);`;
 }
 
 export function makeBar(THREE, opts, rng) {
@@ -37,7 +39,8 @@ export function makeBar(THREE, opts, rng) {
   const topY = HEIGHT / 2;
   const frostGeo = new THREE.ExtrudeGeometry(stadiumShape(THREE, LEN * 0.98, HEIGHT * 0.5),
     { depth: depth * 0.96, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 4, curveSegments: 24 });
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl(LEN / 2, topY)));
+  // frost slab cross-section height is HEIGHT*0.5, so its local Y half-extent is HEIGHT*0.25
+  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl(LEN / 2, HEIGHT * 0.25)));
   frost.position.set(0, topY - FROST_DROP, -depth * 0.96 / 2);
   frost.castShadow = true;
   group.add(frost);

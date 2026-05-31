@@ -8,14 +8,25 @@ function nodes(THREE) {
 }
 
 describe('createMotionDriver', () => {
-  it('advances spin by speed*direction each step', () => {
+  it('spins at constant angular velocity (no acceleration) with growing t', () => {
     const THREE = makeMockThree();
     const { donut, spinner } = nodes(THREE);
     const d = createMotionDriver({ donut, spinner, motion: DEFAULT_MOTION });
-    d.step(1, { x: 0, y: 0 });
-    const first = spinner.rotation.y;
-    d.step(1, { x: 0, y: 0 });
-    expect(spinner.rotation.y).toBeGreaterThan(first);
+    // The render loop feeds an ever-growing accumulated t. Equal t-deltas must
+    // produce equal rotation deltas — otherwise the donut accelerates forever.
+    d.step(1, { x: 0, y: 0 }); const a = spinner.rotation.y;
+    d.step(2, { x: 0, y: 0 }); const b = spinner.rotation.y;
+    d.step(3, { x: 0, y: 0 }); const c = spinner.rotation.y;
+    expect(c).toBeGreaterThan(a);          // it does turn
+    expect(b - a).toBeCloseTo(c - b, 10);  // constant velocity, not accelerating
+  });
+  it('reverses with negative spin direction', () => {
+    const THREE = makeMockThree();
+    const { donut, spinner } = nodes(THREE);
+    const motion = { ...DEFAULT_MOTION, spin: { ...DEFAULT_MOTION.spin, direction: -1 } };
+    const d = createMotionDriver({ donut, spinner, motion });
+    d.step(2, { x: 0, y: 0 });
+    expect(spinner.rotation.y).toBeLessThan(0);
   });
   it('does not move when all behaviors disabled', () => {
     const THREE = makeMockThree();

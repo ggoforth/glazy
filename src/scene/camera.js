@@ -6,6 +6,5 @@ export function buildCamera(THREE, frame = {}) {
   const camera = new THREE.PerspectiveCamera(f.fov, 1, 0.1, 100);
   camera.position.set(f.position[0], f.position[1], f.position[2]);
   camera.lookAt(f.target[0], f.target[1], f.target[2]);
-  camera._target = f.target;
   return camera;
 }

@@ -49,4 +49,17 @@ describe('DonutRenderer (mock THREE)', () => {
     expect(el.querySelector('canvas').getAttribute('aria-hidden')).toBe('true');
     d.destroy();
   });
+
+  it('setOptions rebuilds an OK instance without throwing or duplicating the canvas', () => {
+    const THREE = makeMockThree();
+    const el = makeEl();
+    const d = new DonutRenderer(el, { three: THREE, shape: 'ring', reducedMotion: true });
+    expect(d.ok).toBe(true);
+    d.setOptions({ shape: 'bar', frost: 0x3a73cf, topping: 'nuts' });
+    expect(d.ok).toBe(true);
+    // exactly one canvas — the rebuild must not append a second one
+    expect(el.querySelectorAll('canvas').length).toBe(1);
+    expect(() => d.screenshot()).not.toThrow();
+    d.destroy();
+  });
 });

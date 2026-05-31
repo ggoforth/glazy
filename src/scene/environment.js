@@ -20,5 +20,6 @@ export function buildStudioEnvironment(THREE, renderer) {
   pmrem.compileEquirectangularShader();
   const target = pmrem.fromEquirectangular(envTex);
   envTex.dispose(); pmrem.dispose();
-  return { texture: target.texture, dispose() { target.texture.dispose(); } };
+  // Disposing the render target releases its framebuffer AND its texture.
+  return { texture: target.texture, dispose() { target.dispose(); } };
 }

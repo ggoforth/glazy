@@ -7,13 +7,9 @@ export const version = '0.1.0';
 export { DonutRenderer, presets };
 
 // Bind the default factory so callers just pass a selector.
+// NOTE: importing this module has no side effects (see package.json
+// "sideEffects": false). The UMD/global build adds DOMContentLoaded auto-init
+// via the separate `src/umd.js` entry; ESM consumers call autoInit() themselves.
 export function autoInit(selector = '[data-donut]', options = {}) {
   return _autoInit(selector, (el, dataOpts) => new DonutRenderer(el, { ...options, ...dataOpts }));
-}
-
-// In the bundled UMD/IIFE build, auto-init on DOMContentLoaded for no-build sites.
-if (typeof document !== 'undefined') {
-  const run = () => autoInit();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
-  // Note: in real pages THREE must be loaded first; resolveThree no-ops gracefully otherwise.
 }
