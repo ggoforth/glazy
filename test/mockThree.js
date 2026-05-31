@@ -101,7 +101,7 @@ export function makeMockThree() {
     PerspectiveCamera: class { constructor() { this.position = new Vector3(); this.aspect = 1; } updateProjectionMatrix() {} lookAt() {} },
     AmbientLight: class extends Object3D {}, DirectionalLight: class extends Object3D {
       constructor() { super(); this.shadow = { mapSize: { set() {} }, camera: {}, bias: 0, radius: 0 }; } },
-    TorusGeometry: Geometry, CylinderGeometry: Geometry, IcosahedronGeometry: Geometry, BoxGeometry: Geometry,
+    TorusGeometry: Geometry, CylinderGeometry: Geometry, IcosahedronGeometry: Geometry, BoxGeometry: Geometry, CapsuleGeometry: Geometry,
     SphereGeometry: Geometry, ExtrudeGeometry: Geometry, Shape: class { constructor() {} absarc() {} moveTo() {} lineTo() {} },
     MeshStandardMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
     MeshPhysicalMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
