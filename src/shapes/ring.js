@@ -1,7 +1,7 @@
 // src/shapes/ring.js
 import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
-import { applyGrain } from '../materials/textures.js';
+import { applyGrain, grainField } from '../materials/textures.js';
 import { torusTopSampler } from './surface.js';
 
 const RING = 1.0, DOUGH_TUBE = 0.46, FROST_TUBE = 0.54, FROST_RISE = 0.10, FROST_CLIP_Y = 0.06;
@@ -18,7 +18,8 @@ function ringDripGlsl(rise) {
 export function makeRing(THREE, opts, rng) {
   const group = new THREE.Group();
 
-  const doughGeo = applyGrain(new THREE.TorusGeometry(RING, DOUGH_TUBE, 48, 220), opts.doughGrain, rng);
+  const gf = grainField(rng);
+  const doughGeo = applyGrain(new THREE.TorusGeometry(RING, DOUGH_TUBE, 48, 220), opts.doughGrain, gf);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.rotation.x = Math.PI / 2;
   dough.castShadow = true; dough.receiveShadow = true;
@@ -29,8 +30,8 @@ export function makeRing(THREE, opts, rng) {
   const fTube = thin ? DOUGH_TUBE + 0.015 : FROST_TUBE;
   const fRise = thin ? 0.02 : FROST_RISE;
   if (opts.frostFinish !== 'none') {
-    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING, fTube, 48, 260),
-      makeFrostMaterial(THREE, opts, rng, ringDripGlsl(fRise)));
+    const frostGeo = applyGrain(new THREE.TorusGeometry(RING, fTube, 48, 260), opts.doughGrain, gf);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ringDripGlsl(fRise)));
     frost.rotation.x = Math.PI / 2;
     frost.position.y = fRise;
     frost.castShadow = true;

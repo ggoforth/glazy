@@ -5,8 +5,9 @@ const FINISH = {
   glaze:    { roughness: 0.30, clearcoat: 1.0, clearcoatRoughness: 0.28, bumpScale: 0.006, normalScale: 0.35, env: 0.55 },
   frosting: { roughness: 0.62, clearcoat: 0.0, clearcoatRoughness: 1.0,  bumpScale: 0.018, normalScale: 0.7,  env: 0.2 },
   // plain: a thin, translucent white sugar glaze (fixed white; lets the dough
-  // warmth show through so it reads as a glaze, not opaque grey paint)
-  plain:    { roughness: 0.38, clearcoat: 0.25, clearcoatRoughness: 0.45, bumpScale: 0.006, normalScale: 0.28, color: 0xffffff, env: 0.45, transparent: true, opacity: 0.72 },
+  // warmth show through). Single-sided + polygon offset so the thin transparent
+  // coat renders cleanly over the dough without depth-fighting it.
+  plain:    { roughness: 0.38, clearcoat: 0.25, clearcoatRoughness: 0.45, bumpScale: 0.006, normalScale: 0.28, color: 0xffffff, env: 0.45, transparent: true, opacity: 0.72, frontSide: true, offset: true },
 };
 
 // dripGlsl: a snippet defining `float dripH;` and `float dripEdge;` in frosting-local space.
@@ -21,7 +22,7 @@ export function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
     clearcoat: opts.frostClearcoat ?? f.clearcoat,
     clearcoatRoughness: f.clearcoatRoughness,
     metalness: 0.0,
-    side: THREE.DoubleSide,
+    side: f.frontSide ? THREE.FrontSide : THREE.DoubleSide,
     bumpMap,
     bumpScale: f.bumpScale,
     normalMap,
@@ -29,6 +30,9 @@ export function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
     envMapIntensity: f.env ?? 0.2,
     transparent: f.transparent ?? false,
     opacity: f.opacity ?? 1,
+    polygonOffset: f.offset ?? false,
+    polygonOffsetFactor: f.offset ? -2 : 0,
+    polygonOffsetUnits: f.offset ? -2 : 0,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader

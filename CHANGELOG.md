@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project are documented here. This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.1.3] - 2026-05-31
+### Fixed
+- Frosting now follows the dough's geometric grain (shared grain field), so the
+  bumpy dough no longer pokes through the glaze (broke the bar on all finishes
+  and the old-fashioned on `plain`).
+- The thin translucent `plain` coat renders single-sided with a polygon offset
+  so it no longer z-fights the dough on real GPUs.
+
 ## [0.1.2] - 2026-05-31
 ### Added
 - Topping: coconut flakes. Frost finishes: `plain` (thin translucent white) and

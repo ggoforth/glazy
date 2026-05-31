@@ -1,6 +1,6 @@
 {
   "name": "glazy",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Spinning 3D donuts in a <canvas>, rendered with Three.js.",
   "type": "module",
   "repository": { "type": "git", "url": "git+https://github.com/ggoforth/glazy.git" },

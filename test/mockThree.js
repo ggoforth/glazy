@@ -96,7 +96,7 @@ export function makeMockThree() {
   installCanvas2dStub();
   return {
     REVISION: '160', SRGBColorSpace: 'srgb', NoColorSpace: '', LinearSRGBColorSpace: 'srgb-linear',
-    RepeatWrapping: 1000, DoubleSide: 2, EquirectangularReflectionMapping: 303, PCFSoftShadowMap: 1,
+    RepeatWrapping: 1000, DoubleSide: 2, FrontSide: 0, EquirectangularReflectionMapping: 303, PCFSoftShadowMap: 1,
     Scene, Group, Object3D, Mesh, InstancedMesh, Vector2, Vector3, Color, Quaternion, CanvasTexture,
     PerspectiveCamera: class { constructor() { this.position = new Vector3(); this.aspect = 1; } updateProjectionMatrix() {} lookAt() {} },
     AmbientLight: class extends Object3D {}, DirectionalLight: class extends Object3D {

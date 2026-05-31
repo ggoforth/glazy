@@ -62,17 +62,22 @@ export function doughBumpTexture(THREE, rng, grain = 1) {
   return tex(THREE, canvas, 8, 3);
 }
 
-// Real geometric grain: nudge each vertex along its normal by a smooth pseudo-
-// noise field so the dough surface is visibly bumpy (works on any renderer, not
-// just GPUs that support bump-map derivatives). Mutates and returns `geo`.
-export function applyGrain(geo, grain, rng) {
-  if (!geo.attributes || !geo.attributes.position || !grain) return geo;
+// A grain field is a fixed set of noise frequencies/phases. Generate it once per
+// donut and apply it to BOTH the dough and the frost so the glaze tracks the
+// dough's bumps (otherwise the bumpy dough pokes through the smooth glaze).
+export function grainField(rng) {
+  return { s1: 8 + rng() * 4, s2: 13 + rng() * 5, s3: 19 + rng() * 6, p1: rng() * 6.28, p2: rng() * 6.28 };
+}
+
+// Real geometric grain: nudge each vertex along its normal by the smooth pseudo-
+// noise field so the surface is visibly bumpy (works on any renderer, not just
+// GPUs that support bump-map derivatives). Mutates and returns `geo`.
+export function applyGrain(geo, grain, field) {
+  if (!geo.attributes || !geo.attributes.position || !geo.attributes.normal || !grain || !field) return geo;
   const pos = geo.attributes.position;
   const nor = geo.attributes.normal;
-  if (!nor) return geo;
   const amp = 0.018 * grain;
-  const s1 = 8 + rng() * 4, s2 = 13 + rng() * 5, s3 = 19 + rng() * 6;
-  const p1 = rng() * 6.28, p2 = rng() * 6.28;
+  const { s1, s2, s3, p1, p2 } = field;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     // smooth-ish lumpy field from products/sums of sines of position

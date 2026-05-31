@@ -1,7 +1,7 @@
 // src/shapes/bar.js
 import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
-import { applyGrain } from '../materials/textures.js';
+import { applyGrain, grainField } from '../materials/textures.js';
 import { capsuleTopSampler } from './surface.js';
 
 // A flat, fully-rounded bar (long john). Built from a CapsuleGeometry so the ends
@@ -31,17 +31,19 @@ export function makeBar(THREE, opts, rng) {
   const group = new THREE.Group();
   const r = WID / 2;
 
-  const bodyGeo = applyGrain(flatCapsule(THREE, r, LEN - WID, HEIGHT), opts.doughGrain, rng);
+  const gf = grainField(rng);
+  const bodyGeo = applyGrain(flatCapsule(THREE, r, LEN - WID, HEIGHT), opts.doughGrain, gf);
   const dough = new THREE.Mesh(bodyGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
   // glaze: a concentric shell clipped to a top cap. 'plain' hugs tight (a thin
-  // skin); the poured finishes sit a touch proud.
+  // skin); the poured finishes sit a touch proud. The shell gets the same grain
+  // so it follows the dough bumps instead of letting them poke through.
   const thin = opts.frostFinish === 'plain';
-  const rf = r + (thin ? 0.004 : 0.015), hf = HEIGHT + (thin ? 0.006 : 0.02);
+  const rf = r + (thin ? 0.01 : 0.02), hf = HEIGHT + (thin ? 0.014 : 0.028);
   if (opts.frostFinish !== 'none') {
-    const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
+    const frostGeo = applyGrain(flatCapsule(THREE, rf, LEN - WID, hf), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
     frost.castShadow = true;
     group.add(frost);

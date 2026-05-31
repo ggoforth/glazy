@@ -283,17 +283,22 @@ function doughBumpTexture(THREE, rng, grain = 1) {
   return tex(THREE, canvas, 8, 3);
 }
 
-// Real geometric grain: nudge each vertex along its normal by a smooth pseudo-
-// noise field so the dough surface is visibly bumpy (works on any renderer, not
-// just GPUs that support bump-map derivatives). Mutates and returns `geo`.
-function applyGrain(geo, grain, rng) {
-  if (!geo.attributes || !geo.attributes.position || !grain) return geo;
+// A grain field is a fixed set of noise frequencies/phases. Generate it once per
+// donut and apply it to BOTH the dough and the frost so the glaze tracks the
+// dough's bumps (otherwise the bumpy dough pokes through the smooth glaze).
+function grainField(rng) {
+  return { s1: 8 + rng() * 4, s2: 13 + rng() * 5, s3: 19 + rng() * 6, p1: rng() * 6.28, p2: rng() * 6.28 };
+}
+
+// Real geometric grain: nudge each vertex along its normal by the smooth pseudo-
+// noise field so the surface is visibly bumpy (works on any renderer, not just
+// GPUs that support bump-map derivatives). Mutates and returns `geo`.
+function applyGrain(geo, grain, field) {
+  if (!geo.attributes || !geo.attributes.position || !geo.attributes.normal || !grain || !field) return geo;
   const pos = geo.attributes.position;
   const nor = geo.attributes.normal;
-  if (!nor) return geo;
   const amp = 0.018 * grain;
-  const s1 = 8 + rng() * 4, s2 = 13 + rng() * 5, s3 = 19 + rng() * 6;
-  const p1 = rng() * 6.28, p2 = rng() * 6.28;
+  const { s1, s2, s3, p1, p2 } = field;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     // smooth-ish lumpy field from products/sums of sines of position
@@ -352,8 +357,9 @@ const FINISH = {
   glaze:    { roughness: 0.30, clearcoat: 1.0, clearcoatRoughness: 0.28, bumpScale: 0.006, normalScale: 0.35, env: 0.55 },
   frosting: { roughness: 0.62, clearcoat: 0.0, clearcoatRoughness: 1.0,  bumpScale: 0.018, normalScale: 0.7,  env: 0.2 },
   // plain: a thin, translucent white sugar glaze (fixed white; lets the dough
-  // warmth show through so it reads as a glaze, not opaque grey paint)
-  plain:    { roughness: 0.38, clearcoat: 0.25, clearcoatRoughness: 0.45, bumpScale: 0.006, normalScale: 0.28, color: 0xffffff, env: 0.45, transparent: true, opacity: 0.72 },
+  // warmth show through). Single-sided + polygon offset so the thin transparent
+  // coat renders cleanly over the dough without depth-fighting it.
+  plain:    { roughness: 0.38, clearcoat: 0.25, clearcoatRoughness: 0.45, bumpScale: 0.006, normalScale: 0.28, color: 0xffffff, env: 0.45, transparent: true, opacity: 0.72, frontSide: true, offset: true },
 };
 
 // dripGlsl: a snippet defining `float dripH;` and `float dripEdge;` in frosting-local space.
@@ -368,7 +374,7 @@ function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
     clearcoat: opts.frostClearcoat ?? f.clearcoat,
     clearcoatRoughness: f.clearcoatRoughness,
     metalness: 0.0,
-    side: THREE.DoubleSide,
+    side: f.frontSide ? THREE.FrontSide : THREE.DoubleSide,
     bumpMap,
     bumpScale: f.bumpScale,
     normalMap,
@@ -376,6 +382,9 @@ function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
     envMapIntensity: f.env ?? 0.2,
     transparent: f.transparent ?? false,
     opacity: f.opacity ?? 1,
+    polygonOffset: f.offset ?? false,
+    polygonOffsetFactor: f.offset ? -2 : 0,
+    polygonOffsetUnits: f.offset ? -2 : 0,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
@@ -473,7 +482,8 @@ function ringDripGlsl(rise) {
 function makeRing(THREE, opts, rng) {
   const group = new THREE.Group();
 
-  const doughGeo = applyGrain(new THREE.TorusGeometry(RING$2, DOUGH_TUBE$2, 48, 220), opts.doughGrain, rng);
+  const gf = grainField(rng);
+  const doughGeo = applyGrain(new THREE.TorusGeometry(RING$2, DOUGH_TUBE$2, 48, 220), opts.doughGrain, gf);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.rotation.x = Math.PI / 2;
   dough.castShadow = true; dough.receiveShadow = true;
@@ -484,8 +494,8 @@ function makeRing(THREE, opts, rng) {
   const fTube = thin ? DOUGH_TUBE$2 + 0.015 : FROST_TUBE$2;
   const fRise = thin ? 0.02 : FROST_RISE;
   if (opts.frostFinish !== 'none') {
-    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, fTube, 48, 260),
-      makeFrostMaterial(THREE, opts, rng, ringDripGlsl(fRise)));
+    const frostGeo = applyGrain(new THREE.TorusGeometry(RING$2, fTube, 48, 260), opts.doughGrain, gf);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ringDripGlsl(fRise)));
     frost.rotation.x = Math.PI / 2;
     frost.position.y = fRise;
     frost.castShadow = true;
@@ -529,17 +539,19 @@ function makeBar(THREE, opts, rng) {
   const group = new THREE.Group();
   const r = WID / 2;
 
-  const bodyGeo = applyGrain(flatCapsule(THREE, r, LEN - WID, HEIGHT), opts.doughGrain, rng);
+  const gf = grainField(rng);
+  const bodyGeo = applyGrain(flatCapsule(THREE, r, LEN - WID, HEIGHT), opts.doughGrain, gf);
   const dough = new THREE.Mesh(bodyGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
   // glaze: a concentric shell clipped to a top cap. 'plain' hugs tight (a thin
-  // skin); the poured finishes sit a touch proud.
+  // skin); the poured finishes sit a touch proud. The shell gets the same grain
+  // so it follows the dough bumps instead of letting them poke through.
   const thin = opts.frostFinish === 'plain';
-  const rf = r + (thin ? 0.004 : 0.015), hf = HEIGHT + (thin ? 0.006 : 0.02);
+  const rf = r + (thin ? 0.01 : 0.02), hf = HEIGHT + (thin ? 0.014 : 0.028);
   if (opts.frostFinish !== 'none') {
-    const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
+    const frostGeo = applyGrain(flatCapsule(THREE, rf, LEN - WID, hf), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
     frost.castShadow = true;
     group.add(frost);
@@ -603,16 +615,17 @@ function ofDripGlsl() {
 function makeOldFashioned(THREE, opts, rng) {
   const group = new THREE.Group();
   const seeds = [rng() * 6.283, rng() * 6.283, rng() * 6.283];
+  const gf = grainField(rng);
 
-  const doughGeo = applyGrain(craggy(THREE, new THREE.TorusGeometry(RING$1, DOUGH_TUBE$1, 32, 260), RING$1, seeds), opts.doughGrain, rng);
+  const doughGeo = applyGrain(craggy(THREE, new THREE.TorusGeometry(RING$1, DOUGH_TUBE$1, 32, 260), RING$1, seeds), opts.doughGrain, gf);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  // glaze: same craggy field, just outside the dough ('plain' hugs tighter)
+  // glaze: same craggy + grain field, just outside the dough ('plain' hugs tighter)
   if (opts.frostFinish !== 'none') {
-    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE$1 + 0.012 : FROST_TUBE$1;
-    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING$1, fTube, 32, 260), RING$1, seeds);
+    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE$1 + 0.02 : FROST_TUBE$1;
+    const frostGeo = applyGrain(craggy(THREE, new THREE.TorusGeometry(RING$1, fTube, 32, 260), RING$1, seeds), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
     frost.castShadow = true;
     group.add(frost);
@@ -670,16 +683,17 @@ function crullerDripGlsl() {
 function makeCruller(THREE, opts, rng) {
   const group = new THREE.Group();
   const seeds = [rng() * 6.283, rng() * 6.283];
+  const gf = grainField(rng);
 
-  const doughGeo = applyGrain(twist(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 36, 420), RING, 0.1, seeds), opts.doughGrain, rng);
+  const doughGeo = applyGrain(twist(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 36, 420), RING, 0.1, seeds), opts.doughGrain, gf);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  // glaze: same twist, just outside the dough ridges ('plain' hugs tighter)
+  // glaze: same twist + grain, just outside the dough ridges ('plain' hugs tighter)
   if (opts.frostFinish !== 'none') {
-    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE + 0.012 : FROST_TUBE;
-    const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, fTube, 36, 420), RING, 0.1, seeds);
+    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE + 0.02 : FROST_TUBE;
+    const frostGeo = applyGrain(twist(THREE, new THREE.TorusGeometry(RING, fTube, 36, 420), RING, 0.1, seeds), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
     frost.castShadow = true;
     group.add(frost);
@@ -1129,7 +1143,7 @@ function autoInit$1(selector = '[data-donut]', factory) {
 
 // src/index.js
 
-const version = '0.1.2';
+const version = '0.1.3';
 
 // Bind the default factory so callers just pass a selector.
 // NOTE: importing this module has no side effects (see package.json
