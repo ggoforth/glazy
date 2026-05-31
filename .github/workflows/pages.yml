@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci && npm run build
-      - run: mkdir -p _site && cp -r examples dist _site/
+      - run: mkdir -p _site && cp -r examples dist index.html _site/
       - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
       - id: deploy

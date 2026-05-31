@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>glazy - spinning 3D donuts for the web</title>
+  <style>
+    :root { --ink: #2b2b2b; --accent: #b03a4a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #faf7f2; color: var(--ink); font: 16px/1.6 system-ui, -apple-system, sans-serif; }
+    .hero { position: relative; height: 56vh; min-height: 360px; }
+    #donut { position: absolute; inset: 0; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 64px; text-align: center; }
+    h1 { font-size: 40px; margin: 0 0 6px; letter-spacing: -0.5px; }
+    .tag { color: #6b6b6b; margin: 0 0 28px; }
+    .links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 8px 0 36px; }
+    a.btn { text-decoration: none; padding: 10px 16px; border-radius: 8px; border: 1px solid #e2dacb; color: var(--ink); background: #fff; transition: border-color .15s; }
+    a.btn:hover { border-color: var(--accent); }
+    a.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    code { background: #efe9dd; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { text-align: left; background: #fff; border: 1px solid #e8e0d0; border-radius: 10px; padding: 16px; overflow:auto; font-size: 13px; }
+    .foot { color: #9a9a9a; font-size: 13px; margin-top: 40px; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="hero"><div id="donut" data-donut data-preset="strawberry"></div></div>
+
+  <main class="wrap">
+    <h1>glazy</h1>
+    <p class="tag">Spinning 3D donuts in a <code>&lt;canvas&gt;</code>, rendered with Three.js.</p>
+
+    <div class="links">
+      <a class="btn primary" href="examples/controls.html">Live controls</a>
+      <a class="btn" href="examples/autoinit.html">Presets</a>
+      <a class="btn" href="examples/global.html">Global build</a>
+      <a class="btn" href="examples/cdn.html">No-build / CDN</a>
+      <a class="btn" href="https://github.com/ggoforth/glazy">GitHub</a>
+    </div>
+
+    <p>Drop it into any static page with an import map, no bundler required:</p>
+    <pre>&lt;script type="importmap"&gt;
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+&lt;/script&gt;
+&lt;script type="module"&gt;
+  import { autoInit } from 'https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.esm.js';
+  autoInit();
+&lt;/script&gt;
+
+&lt;div data-donut data-preset="blueberry" data-topping="nuts"&gt;&lt;/div&gt;</pre>
+
+    <p class="foot">MIT licensed. Shapes: ring, bar, old-fashioned, cruller. Toppings: sprinkles, nuts, coconut.</p>
+  </main>
+
+  <!-- UMD global build (deployed alongside this page); three from CDN. -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="dist/glazy.umd.js"></script>
+</body>
+</html>
