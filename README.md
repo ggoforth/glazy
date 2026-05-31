@@ -133,7 +133,7 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 | Option | Type | Default | Notes |
 |---|---|---|---|
 | `three` | THREE \| null | `null` | injected; falls back to global `THREE`, then to a bundled bare `three` import (resolved by an import map) |
-| `shape` | string | `'ring'` | `'ring'`, `'bar'`, `'old-fashioned'` |
+| `shape` | string | `'ring'` | `'ring'`, `'bar'`, `'old-fashioned'`, `'cruller'` |
 | `preset` | string \| null | `null` | merged under explicit options |
 | `dough` | color | `0xdf9f48` | accepts `0xRRGGBB`, `'#rrggbb'`, `'rrggbb'`, number |
 | `frost` | color | `0xed4359` | glaze/frosting color |
@@ -205,6 +205,7 @@ new DonutRenderer('#stage', { three: THREE, preset: 'matcha' });
 | Ring | `'ring'` | ![ring](docs/media/shape-ring.png) |
 | Bar | `'bar'` | ![bar](docs/media/shape-bar.png) |
 | Old-fashioned | `'old-fashioned'` | ![old-fashioned](docs/media/shape-old-fashioned.png) |
+| Cruller | `'cruller'` | ![cruller](docs/media/shape-cruller.png) |
 
 
 ## Three.js compatibility

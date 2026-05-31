@@ -4,8 +4,8 @@ import { makeRng } from '../src/seededRandom.js';
 import { shapes, makeShape } from '../src/shapes/index.js';
 
 describe('shape registry', () => {
-  it('registers ring, bar, old-fashioned', () => {
-    expect(Object.keys(shapes)).toEqual(expect.arrayContaining(['ring', 'bar', 'old-fashioned']));
+  it('registers ring, bar, old-fashioned, cruller', () => {
+    expect(Object.keys(shapes)).toEqual(expect.arrayContaining(['ring', 'bar', 'old-fashioned', 'cruller']));
   });
   it('builds a ring with a group, sampler and frame', () => {
     const THREE = makeMockThree();

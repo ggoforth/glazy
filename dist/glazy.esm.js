@@ -126,7 +126,7 @@ function normalizeMotion(motion = {}, aliases = {}) {
   return out;
 }
 
-const SHAPES = ['ring', 'bar', 'old-fashioned'];
+const SHAPES = ['ring', 'bar', 'old-fashioned', 'cruller'];
 const TOPPINGS = ['sprinkles', 'nuts', 'none'];
 const FINISHES = ['glaze', 'frosting'];
 
@@ -402,7 +402,7 @@ function barTopSampler(THREE, { halfLen, halfWid, topY }) {
 
 // src/shapes/ring.js
 
-const RING$1 = 1.0, DOUGH_TUBE = 0.46, FROST_TUBE = 0.54, FROST_RISE = 0.10, FROST_CLIP_Y = 0.06;
+const RING$2 = 1.0, DOUGH_TUBE$1 = 0.46, FROST_TUBE$1 = 0.54, FROST_RISE = 0.10, FROST_CLIP_Y = 0.06;
 
 // drip edge waves around the ring angle; height is donut-up in frosting-local space.
 function ringDripGlsl() {
@@ -416,12 +416,12 @@ function ringDripGlsl() {
 function makeRing(THREE, opts, rng) {
   const group = new THREE.Group();
 
-  const dough = new THREE.Mesh(new THREE.TorusGeometry(RING$1, DOUGH_TUBE, 48, 220), makeDoughMaterial(THREE, opts, rng));
+  const dough = new THREE.Mesh(new THREE.TorusGeometry(RING$2, DOUGH_TUBE$1, 48, 220), makeDoughMaterial(THREE, opts, rng));
   dough.rotation.x = Math.PI / 2;
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$1, FROST_TUBE, 48, 260),
+  const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, FROST_TUBE$1, 48, 260),
     makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
   frost.rotation.x = Math.PI / 2;
   frost.position.y = FROST_RISE;
@@ -430,7 +430,7 @@ function makeRing(THREE, opts, rng) {
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING$1, tube: FROST_TUBE, rise: FROST_RISE }),
+    topSurface: torusTopSampler(THREE, { ring: RING$2, tube: FROST_TUBE$1, rise: FROST_RISE }),
     frame: {},
     dispose() {},
   };
@@ -518,7 +518,7 @@ function makeBar(THREE, opts, rng) {
 // A cake / old-fashioned doughnut: a fat rounded ring with a gently domed crown,
 // a faint bloom ridge near the outer top, and a few shallow cracks. Smooth and
 // matte (a fried cake crust), not scalloped or glazed (that is the cruller).
-const RING = 0.9, TUBE = 0.56;
+const RING$1 = 0.9, TUBE = 0.56;
 
 // Displace a torus into a cake doughnut, in the hole-axis-Y frame (ring in X/Z).
 function cake(THREE, geo, ring, seeds) {
@@ -552,14 +552,78 @@ function makeOldFashioned(THREE, opts, rng) {
   const group = new THREE.Group();
   const seeds = [rng() * 6.283, rng() * 6.283];
 
-  const doughGeo = cake(THREE, new THREE.TorusGeometry(RING, TUBE, 28, 200), RING, seeds);
+  const doughGeo = cake(THREE, new THREE.TorusGeometry(RING$1, TUBE, 28, 200), RING$1, seeds);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING, tube: TUBE, rise: 0, minNormalY: 0.3 }),
+    topSurface: torusTopSampler(THREE, { ring: RING$1, tube: TUBE, rise: 0, minNormalY: 0.3 }),
+    frame: {},
+    dispose() {},
+  };
+}
+
+// src/shapes/cruller.js
+
+// A French / old-fashioned cruller: a ring whose cross-section is fluted into a
+// star and twisted around the ring, giving deep spiralling rope ridges, then
+// dipped in glaze that follows the ridges.
+const RING = 0.95, DOUGH_TUBE = 0.44, FROST_TUBE = 0.47;
+const LOBES = 5;   // ridges around the tube cross-section
+const TWIST = 3;   // full rotations of the star as you travel around the ring
+
+// Displace a torus into a twisted-rope cruller, in the hole-axis-Y frame.
+// `seeds` are shared between dough and glaze so their ridges line up.
+function twist(THREE, geo, ring, amp, seeds) {
+  geo.rotateX(Math.PI / 2);
+  const pos = geo.attributes.position;
+  const [sA, sB] = seeds;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const u = Math.atan2(z, x);
+    const lr = Math.hypot(x, z) - ring;
+    const v = Math.atan2(y, lr);
+    const cv = Math.cos(v), sv = Math.sin(v);
+    const nx = cv * Math.cos(u), ny = sv, nz = cv * Math.sin(u);
+
+    // fluted star cross-section (LOBES) that rotates with u (TWIST) → helical ridges
+    const ridge = amp * Math.cos(LOBES * v + TWIST * u + sA);
+    const crag = 0.012 * Math.sin(u * 9 + v * 4 + sB);
+    const disp = ridge + crag;
+    pos.setXYZ(i, x + nx * disp, y + ny * disp, z + nz * disp);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Glaze dipped over the top, following the ridges; wavy lower edge shows dough.
+function crullerDripGlsl() {
+  return `
+    float dripH = vLocalPos.y;
+    float dripEdge = -0.07 + 0.05*sin(atan(vLocalPos.z, vLocalPos.x)*6.0) + 0.035*sin(atan(vLocalPos.z, vLocalPos.x)*10.0 + 0.6);`;
+}
+
+function makeCruller(THREE, opts, rng) {
+  const group = new THREE.Group();
+  const seeds = [rng() * 6.283, rng() * 6.283];
+
+  const doughGeo = twist(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 36, 420), RING, 0.1, seeds);
+  const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
+  dough.castShadow = true; dough.receiveShadow = true;
+  group.add(dough);
+
+  // glaze: same twist, a touch larger so it sits just outside the dough ridges
+  const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
+  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
+  frost.castShadow = true;
+  group.add(frost);
+
+  return {
+    group,
+    topSurface: torusTopSampler(THREE, { ring: RING, tube: FROST_TUBE, rise: 0, minNormalY: 0.35 }),
     frame: {},
     dispose() {},
   };
@@ -571,6 +635,7 @@ const shapes = {
   ring: makeRing,
   bar: makeBar,
   'old-fashioned': makeOldFashioned,
+  cruller: makeCruller,
 };
 
 function makeShape(name, THREE, opts, rng) {

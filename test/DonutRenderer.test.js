@@ -10,7 +10,7 @@ function makeEl() {
 }
 
 describe('DonutRenderer (mock THREE)', () => {
-  for (const shape of ['ring', 'bar', 'old-fashioned']) {
+  for (const shape of ['ring', 'bar', 'old-fashioned', 'cruller']) {
     it(`builds the ${shape} scene graph without throwing`, () => {
       const THREE = makeMockThree();
       const el = makeEl();

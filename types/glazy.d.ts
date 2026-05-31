@@ -1,6 +1,6 @@
 // types/glazy.d.ts
 export type ColorInput = number | string;
-export type Shape = 'ring' | 'bar' | 'old-fashioned';
+export type Shape = 'ring' | 'bar' | 'old-fashioned' | 'cruller';
 export type Topping = 'sprinkles' | 'nuts' | 'none';
 export type FrostFinish = 'glaze' | 'frosting';
 

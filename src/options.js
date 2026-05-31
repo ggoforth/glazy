@@ -67,7 +67,7 @@ export function normalizeMotion(motion = {}, aliases = {}) {
   return out;
 }
 
-const SHAPES = ['ring', 'bar', 'old-fashioned'];
+const SHAPES = ['ring', 'bar', 'old-fashioned', 'cruller'];
 const TOPPINGS = ['sprinkles', 'nuts', 'none'];
 const FINISHES = ['glaze', 'frosting'];
 
