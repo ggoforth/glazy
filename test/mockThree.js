@@ -54,14 +54,28 @@ function installCanvas2dStub() {
     if (type !== '2d') return null;
     const canvas = this;
     const makeImage = (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) });
+    // Gradients: src/scene/environment.js builds a procedural studio backdrop via
+    // createLinearGradient/createRadialGradient and assigns the result to fillStyle.
+    // jsdom's null context lacks these, so provide no-op gradients whose addColorStop
+    // does nothing and that are safe to assign to fillStyle.
+    const makeGradient = () => ({ addColorStop() {} });
     return {
       canvas,
       fillStyle: '#000', globalAlpha: 1,
       fillRect() {}, beginPath() {}, arc() {}, fill() {},
+      createLinearGradient() { return makeGradient(); },
+      createRadialGradient() { return makeGradient(); },
       getImageData(_x, _y, w, h) { return makeImage(w, h); },
       createImageData(w, h) { return makeImage(w, h); },
       putImageData() {},
     };
+  };
+  // DonutRenderer.screenshot() reads the renderer's domElement (a real <canvas>)
+  // via canvas.toDataURL('image/png'). jsdom has no raster backend, so its
+  // toDataURL returns 'data:,'. Provide a PNG data URL so the screenshot path
+  // exercises faithfully under jsdom.
+  HTMLCanvasElement.prototype.toDataURL = function toDataURL() {
+    return 'data:image/png;base64,MOCK';
   };
 }
 
