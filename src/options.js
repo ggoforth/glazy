@@ -1,4 +1,6 @@
 // src/options.js
+import { presets } from './presets.js';
+
 let _warned = new Set();
 export function warnOnce(msg) {
   if (_warned.has(msg)) return;
@@ -124,4 +126,11 @@ export function normalizeOptions(input = {}) {
     mouseLean: input.mouseLean,
   });
   return out;
+}
+
+// defaults < preset < explicit, then normalize
+export function resolveOptions(input = {}) {
+  const preset = input.preset && presets[input.preset] ? presets[input.preset] : {};
+  if (input.preset && !presets[input.preset]) warnOnce(`unknown preset "${input.preset}"`);
+  return normalizeOptions({ ...preset, ...input });
 }
