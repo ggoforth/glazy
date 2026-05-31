@@ -38,9 +38,15 @@ export function makeRing(THREE, opts, rng) {
     group.add(frost);
   }
 
+  // toppings sit on the frosted crown, or on the bare dough when there's no frost
+  const hasFrost = opts.frostFinish !== 'none';
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING, tube: fTube, rise: fRise }),
+    topSurface: torusTopSampler(THREE, {
+      ring: RING,
+      tube: hasFrost ? fTube : DOUGH_TUBE,
+      rise: hasFrost ? fRise : 0,
+    }),
     frame: {},
     dispose() {},
   };

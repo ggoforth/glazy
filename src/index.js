@@ -3,7 +3,7 @@ import { DonutRenderer } from './DonutRenderer.js';
 import { autoInit as _autoInit } from './autoInit.js';
 import { presets } from './presets.js';
 
-export const version = '0.1.3';
+export const version = '0.1.4';
 export { DonutRenderer, presets };
 
 // Bind the default factory so callers just pass a selector.

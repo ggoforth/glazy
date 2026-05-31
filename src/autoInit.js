@@ -3,7 +3,7 @@
 const FLAT_KEYS = {
   shape: 'shape', preset: 'preset', frost: 'frost', dough: 'dough',
   frostFinish: 'frostFinish', topping: 'topping', fill: 'fillLight',
-  count: 'toppingCount', spinSpeed: 'spinSpeed', wobble: 'wobble',
+  count: 'toppingCount', zoom: 'zoom', spinSpeed: 'spinSpeed', wobble: 'wobble',
   mouseLean: 'mouseLean', seed: 'seed',
 };
 

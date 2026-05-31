@@ -147,6 +147,7 @@ const DEFAULTS = {
   nutColors: [0xe6c89a, 0xd9b382, 0xc79a5b, 0xb07d45, 0x8a5a32],
   coconutColors: [0xfffaf0, 0xf3e7cf, 0xece0c8, 0xe6d3b3, 0xd8b88a],
   toppingCount: 150,
+  zoom: 1,
   reducedMotion: 'auto',
   pixelRatioCap: 2,
   seed: null,
@@ -185,6 +186,7 @@ function normalizeOptions(input = {}) {
     nutColors: (o.nutColors || []).map((c) => parseColor(c, 0xc79a5b)),
     coconutColors: (o.coconutColors || []).map((c) => parseColor(c, 0xfffaf0)),
     toppingCount: clampInt(o.toppingCount, 0, 2000, DEFAULTS.toppingCount),
+    zoom: Math.max(0.2, Math.min(3, Number(o.zoom) || 1)),
     reducedMotion: o.reducedMotion === true || o.reducedMotion === false ? o.reducedMotion : 'auto',
     pixelRatioCap: Number(o.pixelRatioCap) || 2,
     seed: o.seed == null ? null : (o.seed >>> 0),
@@ -502,9 +504,15 @@ function makeRing(THREE, opts, rng) {
     group.add(frost);
   }
 
+  // toppings sit on the frosted crown, or on the bare dough when there's no frost
+  const hasFrost = opts.frostFinish !== 'none';
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING$2, tube: fTube, rise: fRise }),
+    topSurface: torusTopSampler(THREE, {
+      ring: RING$2,
+      tube: hasFrost ? fTube : DOUGH_TUBE$2,
+      rise: hasFrost ? fRise : 0,
+    }),
     frame: {},
     dispose() {},
   };
@@ -549,19 +557,22 @@ function makeBar(THREE, opts, rng) {
   // skin); the poured finishes sit a touch proud. The shell gets the same grain
   // so it follows the dough bumps instead of letting them poke through.
   const thin = opts.frostFinish === 'plain';
+  const hasFrost = opts.frostFinish !== 'none';
   const rf = r + (thin ? 0.01 : 0.02), hf = HEIGHT + (thin ? 0.014 : 0.028);
-  if (opts.frostFinish !== 'none') {
+  if (hasFrost) {
     const frostGeo = applyGrain(flatCapsule(THREE, rf, LEN - WID, hf), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
     frost.castShadow = true;
     group.add(frost);
   }
 
+  // toppings on the glazed crown, or on the bare dough when there's no frost
+  const sR = hasFrost ? rf : r, sH = hasFrost ? hf : HEIGHT;
   return {
     group,
     toppingScale: 0.6, // the bar is smaller than the ring, so shrink its toppings
-    // scatter over the glazed crown along the whole length, out to the rounded ends
-    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.18 }),
+    // scatter over the crown along the whole length, out to the rounded ends
+    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: sR, hs: sH / (2 * sR), clipY: 0.18 }),
     frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
     dispose() {},
   };
@@ -633,7 +644,11 @@ function makeOldFashioned(THREE, opts, rng) {
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING$1, tube: FROST_TUBE$1, rise: 0, minNormalY: 0.3 }),
+    topSurface: torusTopSampler(THREE, {
+      ring: RING$1,
+      tube: opts.frostFinish === 'none' ? DOUGH_TUBE$1 : FROST_TUBE$1,
+      rise: 0, minNormalY: 0.3,
+    }),
     frame: {},
     dispose() {},
   };
@@ -701,7 +716,11 @@ function makeCruller(THREE, opts, rng) {
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING, tube: FROST_TUBE, rise: 0, minNormalY: 0.35 }),
+    topSurface: torusTopSampler(THREE, {
+      ring: RING,
+      tube: opts.frostFinish === 'none' ? DOUGH_TUBE : FROST_TUBE,
+      rise: 0, minNormalY: 0.35,
+    }),
     frame: {},
     dispose() {},
   };
@@ -987,9 +1006,10 @@ class DonutRenderer {
     this.scene.add(lighting.group);
     this._lighting = lighting;
 
-    // donut(group: tilt/wobble) → spinner(group: turntable) → shape + toppings
+    // donut(group: tilt/wobble) → spinner(group: turntable, zoom) → shape + toppings
     this.donut = new THREE.Group();
     this.spinner = new THREE.Group();
+    this.spinner.scale.setScalar(opts.zoom); // zoom out (<1) / in (>1) without moving the camera
     this.donut.add(this.spinner);
     this.scene.add(this.donut);
 
@@ -1113,7 +1133,7 @@ class DonutRenderer {
 const FLAT_KEYS = {
   shape: 'shape', preset: 'preset', frost: 'frost', dough: 'dough',
   frostFinish: 'frostFinish', topping: 'topping', fill: 'fillLight',
-  count: 'toppingCount', spinSpeed: 'spinSpeed', wobble: 'wobble',
+  count: 'toppingCount', zoom: 'zoom', spinSpeed: 'spinSpeed', wobble: 'wobble',
   mouseLean: 'mouseLean', seed: 'seed',
 };
 
@@ -1143,7 +1163,7 @@ function autoInit$1(selector = '[data-donut]', factory) {
 
 // src/index.js
 
-const version = '0.1.3';
+const version = '0.1.4';
 
 // Bind the default factory so callers just pass a selector.
 // NOTE: importing this module has no side effects (see package.json

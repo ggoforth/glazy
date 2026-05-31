@@ -41,19 +41,22 @@ export function makeBar(THREE, opts, rng) {
   // skin); the poured finishes sit a touch proud. The shell gets the same grain
   // so it follows the dough bumps instead of letting them poke through.
   const thin = opts.frostFinish === 'plain';
+  const hasFrost = opts.frostFinish !== 'none';
   const rf = r + (thin ? 0.01 : 0.02), hf = HEIGHT + (thin ? 0.014 : 0.028);
-  if (opts.frostFinish !== 'none') {
+  if (hasFrost) {
     const frostGeo = applyGrain(flatCapsule(THREE, rf, LEN - WID, hf), opts.doughGrain, gf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
     frost.castShadow = true;
     group.add(frost);
   }
 
+  // toppings on the glazed crown, or on the bare dough when there's no frost
+  const sR = hasFrost ? rf : r, sH = hasFrost ? hf : HEIGHT;
   return {
     group,
     toppingScale: 0.6, // the bar is smaller than the ring, so shrink its toppings
-    // scatter over the glazed crown along the whole length, out to the rounded ends
-    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.18 }),
+    // scatter over the crown along the whole length, out to the rounded ends
+    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: sR, hs: sH / (2 * sR), clipY: 0.18 }),
     frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
     dispose() {},
   };

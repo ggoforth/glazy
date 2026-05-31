@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project are documented here. This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.1.4] - 2026-05-31
+### Added
+- `zoom` option (and `data-zoom`): scale the donut in view without moving the camera.
+### Fixed
+- Toppings now sit on the bare dough when `frostFinish` is `none` (they were placed at the frost height and hovered, casting shadows).
+
 ## [0.1.3] - 2026-05-31
 ### Fixed
 - Frosting now follows the dough's geometric grain (shared grain field), so the

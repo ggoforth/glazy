@@ -62,9 +62,10 @@ export class DonutRenderer {
     this.scene.add(lighting.group);
     this._lighting = lighting;
 
-    // donut(group: tilt/wobble) → spinner(group: turntable) → shape + toppings
+    // donut(group: tilt/wobble) → spinner(group: turntable, zoom) → shape + toppings
     this.donut = new THREE.Group();
     this.spinner = new THREE.Group();
+    this.spinner.scale.setScalar(opts.zoom); // zoom out (<1) / in (>1) without moving the camera
     this.donut.add(this.spinner);
     this.scene.add(this.donut);
 

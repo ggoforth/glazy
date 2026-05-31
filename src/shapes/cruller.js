@@ -64,7 +64,11 @@ export function makeCruller(THREE, opts, rng) {
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING, tube: FROST_TUBE, rise: 0, minNormalY: 0.35 }),
+    topSurface: torusTopSampler(THREE, {
+      ring: RING,
+      tube: opts.frostFinish === 'none' ? DOUGH_TUBE : FROST_TUBE,
+      rise: 0, minNormalY: 0.35,
+    }),
     frame: {},
     dispose() {},
   };

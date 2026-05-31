@@ -33,6 +33,7 @@ export interface DonutOptions {
   nutColors?: ColorInput[];
   coconutColors?: ColorInput[];
   toppingCount?: number;
+  zoom?: number;
   motion?: MotionOptions;
   spinSpeed?: number;
   wobble?: boolean;

@@ -276,6 +276,7 @@
         <div class="sec">
           <h3><span class="ic">▦</span> Render</h3>
           <div class="pad">
+            <div class="row"><span class="name">zoom</span><input type="range" id="zoom" min="0.4" max="1.6" step="0.05" value="1"><span class="val" data-for="zoom"></span></div>
             <div class="row"><span class="name">px-ratio</span><input type="range" id="pixelRatioCap" min="1" max="3" step="0.5" value="2"><span class="val" data-for="pixelRatioCap"></span></div>
           </div>
         </div>
@@ -317,6 +318,7 @@
         glazeTextureScale: num('glazeTextureScale'),
         doughRoughness: num('doughRoughness'), doughGrain: num('doughGrain'), crust: num('crust'),
         topping: val('topping'), toppingCount: num('toppingCount'),
+        zoom: num('zoom'),
         pixelRatioCap: num('pixelRatioCap'),
         seed: val('seed') === '' ? null : parseInt(val('seed'), 10),
         reducedMotion: val('reducedMotion') === 'auto' ? 'auto' : val('reducedMotion') === 'true',

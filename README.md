@@ -105,6 +105,7 @@ Mark any element with `data-donut` and call `autoInit()`. The UMD build does thi
 | `data-frost-finish` | `frostFinish` | `data-frost-finish="frosting"` |
 | `data-topping` | `topping` | `data-topping="nuts"` |
 | `data-count` | `toppingCount` | `data-count="80"` |
+| `data-zoom` | `zoom` | `data-zoom="0.7"` |
 | `data-fill` | `fillLight` | `data-fill="#e6f0ff"` |
 | `data-seed` | `seed` | `data-seed="42"` |
 | `data-spin-speed` | `motion.spin.speed` | `data-spin-speed="0.01"` |
@@ -150,6 +151,7 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 | `nutColors` | color[] | tan to walnut | |
 | `coconutColors` | color[] | white to toasted | flake colors |
 | `toppingCount` | int | `150` | clamped `[0, 2000]` |
+| `zoom` | number | `1` | donut scale in view; `<1` smaller, `>1` larger (clamped `[0.2, 3]`) |
 | `motion` | object | see below | per-behavior motion and interaction config |
 | `spinSpeed` | number | `0.004` | alias for `motion.spin.speed` |
 | `wobble` | bool | `true` | alias for `motion.wobble.enabled` |
