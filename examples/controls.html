@@ -415,23 +415,69 @@
     $('random').addEventListener('click', randomize);
     $('random2').addEventListener('click', randomize);
 
-    // on-canvas zoom widget (drives the hidden #zoom input)
-    function setZoom(z) {
+    // on-canvas zoom widget. Zoom is purely visual: scale the donut group
+    // directly (no rebuild) and keep the value in #zoom so gather() uses it.
+    let userZoomed = false;
+    function setZoomValue(z) {
       z = Math.max(0.4, Math.min(1.8, Math.round(z * 100) / 100));
       $('zoom').value = z;
       $('zoomPct').textContent = Math.round(z * 100) + '%';
-      apply();
+      if (donut.ok) donut.spinner.scale.setScalar(z);
+      return z;
     }
+    const setZoom = (z) => { userZoomed = true; setZoomValue(z); };
     $('zoomIn').addEventListener('click', () => setZoom(num('zoom') + 0.1));
     $('zoomOut').addEventListener('click', () => setZoom(num('zoom') - 0.1));
-    $('zoomPct').addEventListener('click', () => setZoom(1));
+    $('zoomPct').addEventListener('click', () => { userZoomed = false; fitToWindow(); }); // reset = fit
     window.addEventListener('keydown', (e) => {
       if (e.target.matches('input, select, textarea')) return;
       if (e.key === '+' || e.key === '=') setZoom(num('zoom') + 0.1);
       if (e.key === '-' || e.key === '_') setZoom(num('zoom') - 0.1);
     });
 
+    // Measure the donut's rendered size as a fraction of the canvas (transparent
+    // canvas → donut pixels have alpha). Returns 0 if nothing is drawn yet.
+    function measureFrac() {
+      const cv = $('stage').querySelector('canvas');
+      if (!cv || !cv.width) return 0;
+      const sw = 150, sh = Math.max(1, Math.round(150 * cv.height / cv.width));
+      const t = document.createElement('canvas'); t.width = sw; t.height = sh;
+      let data;
+      try { const c = t.getContext('2d'); c.drawImage(cv, 0, 0, sw, sh); data = c.getImageData(0, 0, sw, sh).data; } catch (e) { return 0; }
+      let minx = sw, miny = sh, maxx = 0, maxy = 0, found = false;
+      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+        if (data[(y * sw + x) * 4 + 3] > 24) { found = true; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+      }
+      return found ? Math.max((maxx - minx + 1) / sw, (maxy - miny + 1) / sh) : 0;
+    }
+
+    // Auto-fit: iteratively scale so the donut fills ~80% of the stage. Each pass
+    // re-renders synchronously (cheap; no rebuild) so the next measure is current.
+    function fitToWindow() {
+      if (userZoomed || !donut.ok) return;
+      for (let i = 0; i < 5; i++) {
+        const frac = measureFrac();
+        if (!frac) return;
+        const cur = num('zoom');
+        const next = setZoomValue(cur * 0.8 / frac);
+        donut.renderer.render(donut.scene, donut.camera);
+        if (Math.abs(next - cur) < 0.015) break;
+      }
+    }
+
+    // wait for the first rendered frame, then fit
+    function fitOnLoad(tries) {
+      if (userZoomed) return;
+      if (measureFrac() === 0 && tries > 0) { requestAnimationFrame(() => fitOnLoad(tries - 1)); return; }
+      fitToWindow();
+    }
+
+    // refit when the shape changes (different shapes frame differently) or on resize
+    document.querySelector('.seg[data-target="shape"]').addEventListener('click', () => { userZoomed = false; setTimeout(fitToWindow, 120); });
+    let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(fitToWindow, 180); });
+
     syncReadouts();
+    fitOnLoad(120);
   </script>
 </body>
 </html>
