@@ -319,10 +319,11 @@ function makeDoughMaterial(THREE, opts, rng) {
 // src/materials/frostMaterial.js
 
 const FINISH = {
-  glaze:    { roughness: 0.30, clearcoat: 1.0, clearcoatRoughness: 0.28, bumpScale: 0.006, normalScale: 0.35 },
-  frosting: { roughness: 0.62, clearcoat: 0.0, clearcoatRoughness: 1.0,  bumpScale: 0.018, normalScale: 0.7 },
-  // plain: a thin, mostly-opaque white frosting (color is fixed white, ignores `frost`)
-  plain:    { roughness: 0.55, clearcoat: 0.08, clearcoatRoughness: 0.85, bumpScale: 0.01, normalScale: 0.45, color: 0xfbf7ee },
+  glaze:    { roughness: 0.30, clearcoat: 1.0, clearcoatRoughness: 0.28, bumpScale: 0.006, normalScale: 0.35, env: 0.55 },
+  frosting: { roughness: 0.62, clearcoat: 0.0, clearcoatRoughness: 1.0,  bumpScale: 0.018, normalScale: 0.7,  env: 0.2 },
+  // plain: a thin, translucent white sugar glaze (fixed white; lets the dough
+  // warmth show through so it reads as a glaze, not opaque grey paint)
+  plain:    { roughness: 0.38, clearcoat: 0.25, clearcoatRoughness: 0.45, bumpScale: 0.006, normalScale: 0.28, color: 0xffffff, env: 0.45, transparent: true, opacity: 0.72 },
 };
 
 // dripGlsl: a snippet defining `float dripH;` and `float dripEdge;` in frosting-local space.
@@ -342,7 +343,9 @@ function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
     bumpScale: f.bumpScale,
     normalMap,
     normalScale: new THREE.Vector2(f.normalScale, f.normalScale),
-    envMapIntensity: opts.frostFinish === 'glaze' ? 0.55 : 0.2,
+    envMapIntensity: f.env ?? 0.2,
+    transparent: f.transparent ?? false,
+    opacity: f.opacity ?? 1,
   });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
