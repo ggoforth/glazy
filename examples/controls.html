@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><title>glazy · controls</title>
+<style>body{margin:0;background:#faf7f2}#stage{position:relative;width:100vw;height:80vh}
+.panel{display:flex;gap:12px;padding:12px;font:14px system-ui;align-items:center;flex-wrap:wrap}</style></head>
+<body>
+  <div id="stage"></div>
+  <div class="panel">
+    <label>frost <input type="color" id="frost" value="#ed4359"></label>
+    <label>dough <input type="color" id="dough" value="#df9f48"></label>
+    <label>shape <select id="shape"><option>ring</option><option>bar</option><option>old-fashioned</option></select></label>
+    <label>topping <select id="topping"><option>sprinkles</option><option>nuts</option><option>none</option></select></label>
+    <label>finish <select id="finish"><option>glaze</option><option>frosting</option></select></label>
+    <button id="shot">screenshot</button>
+  </div>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="../dist/glazy.umd.js"></script>
+  <script>
+    const stage = document.getElementById('stage');
+    let donut = new Glazy.DonutRenderer(stage, { frost: 0xed4359 });
+    const upd = () => donut.setOptions({
+      frost: document.getElementById('frost').value,
+      dough: document.getElementById('dough').value,
+      shape: document.getElementById('shape').value,
+      topping: document.getElementById('topping').value,
+      frostFinish: document.getElementById('finish').value,
+    });
+    ['frost','dough','shape','topping','finish'].forEach(id => document.getElementById(id).addEventListener('input', upd));
+    document.getElementById('shot').addEventListener('click', () => {
+      const a = document.createElement('a'); a.href = donut.screenshot(); a.download = 'donut.png'; a.click();
+    });
+  </script>
+</body></html>

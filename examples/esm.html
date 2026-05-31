@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><title>glazy · esm</title>
+<style>body{margin:0;background:#faf7f2}#stage{position:relative;width:100vw;height:100vh}</style>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
+</head><body>
+  <div id="stage"></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { DonutRenderer } from '../dist/glazy.esm.js';
+    new DonutRenderer(document.getElementById('stage'), { three: THREE, shape: 'old-fashioned', frost: 0x8fbf6f });
+  </script>
+</body></html>
