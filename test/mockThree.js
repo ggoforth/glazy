@@ -16,6 +16,9 @@ class Vector3 {
   addScaledVector() { return this; }
   clone() { return new Vector3(this.x, this.y, this.z); }
 }
+class Vector2 {
+  constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+}
 class Color { constructor(c) { this.value = c; } setHex(c) { this.value = c; return this; } }
 class Quaternion { setFromUnitVectors() { return this; } }
 class Object3D {
@@ -37,12 +40,37 @@ class InstancedMesh extends Mesh {
 class Geometry extends Disposable {}
 class CanvasTexture extends Disposable { constructor() { super(); this.repeat = { set() {} }; } }
 
+// jsdom has no 2D canvas backend (the optional `canvas` npm pkg is not installed),
+// so HTMLCanvasElement.prototype.getContext('2d') returns null. The texture
+// generators in src/materials/textures.js draw to a real <canvas>; this minimal
+// stub gives them a working 2D context (backed by a real ImageData buffer) so the
+// texture math runs faithfully under jsdom instead of crashing on a null context.
+function installCanvas2dStub() {
+  if (typeof HTMLCanvasElement === 'undefined') return;
+  if (HTMLCanvasElement.prototype.__stub2d) return;
+  HTMLCanvasElement.prototype.__stub2d = true;
+  HTMLCanvasElement.prototype.getContext = function getContext(type) {
+    if (type !== '2d') return null;
+    const canvas = this;
+    const makeImage = (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) });
+    return {
+      canvas,
+      fillStyle: '#000', globalAlpha: 1,
+      fillRect() {}, beginPath() {}, arc() {}, fill() {},
+      getImageData(_x, _y, w, h) { return makeImage(w, h); },
+      createImageData(w, h) { return makeImage(w, h); },
+      putImageData() {},
+    };
+  };
+}
+
 export function makeMockThree() {
   disposed.length = 0;
+  installCanvas2dStub();
   return {
     REVISION: '160', SRGBColorSpace: 'srgb', NoColorSpace: '', LinearSRGBColorSpace: 'srgb-linear',
     RepeatWrapping: 1000, DoubleSide: 2, EquirectangularReflectionMapping: 303, PCFSoftShadowMap: 1,
-    Scene, Group, Object3D, Mesh, InstancedMesh, Vector3, Color, Quaternion, CanvasTexture,
+    Scene, Group, Object3D, Mesh, InstancedMesh, Vector2, Vector3, Color, Quaternion, CanvasTexture,
     PerspectiveCamera: class { constructor() { this.position = new Vector3(); this.aspect = 1; } updateProjectionMatrix() {} lookAt() {} },
     AmbientLight: class extends Object3D {}, DirectionalLight: class extends Object3D {
       constructor() { super(); this.shadow = { mapSize: { set() {} }, camera: {}, bias: 0, radius: 0 }; } },
