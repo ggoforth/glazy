@@ -1,7 +1,7 @@
 // src/shapes/bar.js
 import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
-import { barTopSampler } from './surface.js';
+import { capsuleTopSampler } from './surface.js';
 
 // A flat, fully-rounded bar (long john). Built from a CapsuleGeometry so the ends
 // are rounded hemispheres and the sides slope gently, with no extrude seam to
@@ -19,11 +19,11 @@ function flatCapsule(THREE, r, l, height) {
 }
 
 // Concentric glaze cap: discard everything below a wavy height so the glaze
-// drapes the whole top and ends in an uneven drip lip. vLocalPos is post-scale.
+// drapes the top and ends in an uneven drip lip. vLocalPos is post-scale.
 function barDripGlsl() {
   return `
     float dripH = vLocalPos.y;
-    float dripEdge = 0.04 + 0.05*sin(vLocalPos.x*6.5) + 0.03*sin(vLocalPos.z*9.0 + 1.0) + 0.02*sin(vLocalPos.x*14.0);`;
+    float dripEdge = 0.07 + 0.05*sin(vLocalPos.x*6.5) + 0.03*sin(vLocalPos.z*9.0 + 1.0) + 0.02*sin(vLocalPos.x*14.0);`;
 }
 
 export function makeBar(THREE, opts, rng) {
@@ -35,8 +35,8 @@ export function makeBar(THREE, opts, rng) {
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  // glaze: slightly larger/taller capsule, concentric, clipped to a top cap
-  const rf = r + 0.04, hf = HEIGHT + 0.06;
+  // glaze: a thin concentric shell hugging the body, clipped to a top cap
+  const rf = r + 0.015, hf = HEIGHT + 0.02;
   const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
   const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
   frost.castShadow = true;
@@ -44,8 +44,8 @@ export function makeBar(THREE, opts, rng) {
 
   return {
     group,
-    // scatter over the flatter crown (avoid the curved ends/sides)
-    topSurface: barTopSampler(THREE, { halfLen: (LEN - WID) / 2, halfWid: WID * 0.3, topY: hf / 2 }),
+    // scatter over the glazed crown along the whole length, out to the rounded ends
+    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.15 }),
     frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
     dispose() {},
   };

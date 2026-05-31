@@ -8,7 +8,7 @@ import { torusTopSampler } from './surface.js';
 // dipped in glaze that follows the ridges.
 const RING = 0.95, DOUGH_TUBE = 0.44, FROST_TUBE = 0.47;
 const LOBES = 5;   // ridges around the tube cross-section
-const TWIST = 3;   // full rotations of the star as you travel around the ring
+const TWIST = 5;   // full rotations of the star as you travel around the ring
 
 // Displace a torus into a twisted-rope cruller, in the hole-axis-Y frame.
 // `seeds` are shared between dough and glaze so their ridges line up.

@@ -404,17 +404,37 @@
     };
   }
 
-  // Top-face sampler for the bar: scatter across the rounded top plane.
-  function barTopSampler(THREE, { halfLen, halfWid, topY }) {
+  // Top sampler for the flattened-capsule bar: scatter over the actual domed top
+  // of a capsule (cylinder of half-length `a`, radius `R`, squashed vertically by
+  // `hs`), out to the rounded ends. `clipY` keeps points on the glazed crown only.
+  function capsuleTopSampler(THREE, { a, R, hs, clipY }) {
+    const xMax = a + R * 0.8; // reach onto the rounded end caps
     return {
       sample(count, rng) {
         const out = [];
-        for (let i = 0; i < count; i++) {
-          const x = (rng() * 2 - 1) * halfLen;
-          const z = (rng() * 2 - 1) * halfWid;
+        let guard = 0;
+        while (out.length < count && guard < count * 60) {
+          guard++;
+          const x = (rng() * 2 - 1) * xMax;
+          const z = (rng() * 2 - 1) * R;
+          const ax = Math.abs(x);
+          let dy, nx;
+          if (ax <= a) {                          // cylindrical middle
+            const rem = R * R - z * z;
+            if (rem <= 0) continue;
+            dy = Math.sqrt(rem); nx = 0;
+          } else {                                // spherical end cap
+            const dx = ax - a;
+            const rem = R * R - dx * dx - z * z;
+            if (rem <= 0) continue;
+            dy = Math.sqrt(rem); nx = x < 0 ? -dx : dx;
+          }
+          const y = hs * dy;
+          if (y < clipY) continue;                // only where the glaze survives
           out.push({
-            position: new THREE.Vector3(x, topY, z),
-            normal: new THREE.Vector3(0, 1, 0),
+            position: new THREE.Vector3(x, y, z),
+            // un-squash the surface normal (scale (1,hs,1) → normal scale (1,1/hs,1))
+            normal: new THREE.Vector3(nx, dy / hs, z).normalize(),
             tangent: new THREE.Vector3(1, 0, 0),
           });
         }
@@ -425,7 +445,7 @@
 
   // src/shapes/ring.js
 
-  const RING$2 = 1.0, DOUGH_TUBE$1 = 0.46, FROST_TUBE$1 = 0.54, FROST_RISE = 0.10, FROST_CLIP_Y = 0.06;
+  const RING$2 = 1.0, DOUGH_TUBE$2 = 0.46, FROST_TUBE$2 = 0.54, FROST_RISE = 0.10, FROST_CLIP_Y = 0.06;
 
   // drip edge waves around the ring angle; height is donut-up in frosting-local space.
   function ringDripGlsl() {
@@ -439,12 +459,12 @@
   function makeRing(THREE, opts, rng) {
     const group = new THREE.Group();
 
-    const dough = new THREE.Mesh(new THREE.TorusGeometry(RING$2, DOUGH_TUBE$1, 48, 220), makeDoughMaterial(THREE, opts, rng));
+    const dough = new THREE.Mesh(new THREE.TorusGeometry(RING$2, DOUGH_TUBE$2, 48, 220), makeDoughMaterial(THREE, opts, rng));
     dough.rotation.x = Math.PI / 2;
     dough.castShadow = true; dough.receiveShadow = true;
     group.add(dough);
 
-    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, FROST_TUBE$1, 48, 260),
+    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, FROST_TUBE$2, 48, 260),
       makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
     frost.rotation.x = Math.PI / 2;
     frost.position.y = FROST_RISE;
@@ -453,7 +473,7 @@
 
     return {
       group,
-      topSurface: torusTopSampler(THREE, { ring: RING$2, tube: FROST_TUBE$1, rise: FROST_RISE }),
+      topSurface: torusTopSampler(THREE, { ring: RING$2, tube: FROST_TUBE$2, rise: FROST_RISE }),
       frame: {},
       dispose() {},
     };
@@ -477,11 +497,11 @@
   }
 
   // Concentric glaze cap: discard everything below a wavy height so the glaze
-  // drapes the whole top and ends in an uneven drip lip. vLocalPos is post-scale.
+  // drapes the top and ends in an uneven drip lip. vLocalPos is post-scale.
   function barDripGlsl() {
     return `
     float dripH = vLocalPos.y;
-    float dripEdge = 0.04 + 0.05*sin(vLocalPos.x*6.5) + 0.03*sin(vLocalPos.z*9.0 + 1.0) + 0.02*sin(vLocalPos.x*14.0);`;
+    float dripEdge = 0.07 + 0.05*sin(vLocalPos.x*6.5) + 0.03*sin(vLocalPos.z*9.0 + 1.0) + 0.02*sin(vLocalPos.x*14.0);`;
   }
 
   function makeBar(THREE, opts, rng) {
@@ -493,8 +513,8 @@
     dough.castShadow = true; dough.receiveShadow = true;
     group.add(dough);
 
-    // glaze: slightly larger/taller capsule, concentric, clipped to a top cap
-    const rf = r + 0.04, hf = HEIGHT + 0.06;
+    // glaze: a thin concentric shell hugging the body, clipped to a top cap
+    const rf = r + 0.015, hf = HEIGHT + 0.02;
     const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
     frost.castShadow = true;
@@ -502,8 +522,8 @@
 
     return {
       group,
-      // scatter over the flatter crown (avoid the curved ends/sides)
-      topSurface: barTopSampler(THREE, { halfLen: (LEN - WID) / 2, halfWid: WID * 0.3, topY: hf / 2 }),
+      // scatter over the glazed crown along the whole length, out to the rounded ends
+      topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.15 }),
       frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
       dispose() {},
     };
@@ -511,32 +531,35 @@
 
   // src/shapes/oldFashioned.js
 
-  // A cake / old-fashioned doughnut: a fat rounded ring with a gently domed crown,
-  // a faint bloom ridge near the outer top, and a few shallow cracks. Smooth and
-  // matte (a fried cake crust), not scalloped or glazed (that is the cruller).
-  const RING$1 = 0.9, TUBE = 0.56;
+  // An old-fashioned (sour-cream cake) doughnut: a chunky ring broken into big
+  // irregular lobes with deep craggy crevices, then dipped in glaze that pools and
+  // follows the lumps. Lumpy and irregular (not the cruller's even twist).
+  const RING$1 = 0.9, DOUGH_TUBE$1 = 0.5, FROST_TUBE$1 = 0.53;
 
-  // Displace a torus into a cake doughnut, in the hole-axis-Y frame (ring in X/Z).
-  function cake(THREE, geo, ring, seeds) {
+  // Displace a torus into a craggy lobed old-fashioned, in the hole-axis-Y frame.
+  // `seeds` are shared between dough and glaze so their lumps line up.
+  function craggy(THREE, geo, ring, seeds) {
     geo.rotateX(Math.PI / 2);
     const pos = geo.attributes.position;
-    const [sA, sB] = seeds;
+    const [sA, sB, sC] = seeds;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
       const u = Math.atan2(z, x);
       const lr = Math.hypot(x, z) - ring;
-      const v = Math.atan2(y, lr);                // 0 outer, +PI/2 top, PI inner
+      const v = Math.atan2(y, lr);
       const cv = Math.cos(v), sv = Math.sin(v);
       const nx = cv * Math.cos(u), ny = sv, nz = cv * Math.sin(u);
+      const outMask = 0.5 + 0.5 * cv; // 1 outer rim, 0 hole
+      const topMask = 0.5 + 0.5 * sv; // 1 top, 0 underside
 
-      // subtle, mostly non-periodic lumps so the crust looks handmade, not faceted
-      const lumps = 0.015 * (Math.sin(u * 4 + v * 2 + sA) + Math.sin(u * 7 - v * 3 + sB));
-      // bloomed crown ridge around the upper-outer shoulder, gently uneven
-      const ridge = 0.05 * Math.exp(-Math.pow((v - 0.72) / 0.36, 2)) * (1 + 0.12 * Math.sin(u * 5 + sA));
-      // shallow irregular cracks splitting the top crust (the bloom seams)
-      const crack = -0.035 * Math.pow(Math.max(0, Math.sin(u * 9 + 1.4 * Math.sin(u * 4 + sB))), 6) * Math.max(0, sv);
+      // big irregular lobes around the ring (mixed frequencies → uneven blossom)
+      const lobes = 0.07 * Math.cos(u * 5 + sA) + 0.04 * Math.cos(u * 3 + sB) + 0.025 * Math.cos(u * 8 + sC);
+      // deep craggy crevices splitting the lobes, mostly on the top/outer crust
+      const crevice = -0.07 * Math.pow(Math.max(0, Math.sin(u * 6 + 1.6 * Math.sin(u * 3 + sA))), 4) * (0.4 + 0.6 * topMask);
+      // rough 3D crag so it never looks lathe-smooth
+      const crag = 0.03 * (Math.sin(u * 7 + v * 4 + sB) + Math.sin(u * 12 - v * 5 + sC));
 
-      const disp = lumps + ridge + crack;
+      const disp = lobes * (0.55 + 0.45 * outMask) + crevice + crag;
       pos.setXYZ(i, x + nx * disp, y + ny * disp, z + nz * disp);
     }
     pos.needsUpdate = true;
@@ -544,18 +567,31 @@
     return geo;
   }
 
+  // Glaze dipped over most of the top, following the lumps; wavy lower edge.
+  function ofDripGlsl() {
+    return `
+    float dripH = vLocalPos.y;
+    float dripEdge = -0.14 + 0.06*sin(atan(vLocalPos.z, vLocalPos.x)*5.0) + 0.04*sin(atan(vLocalPos.z, vLocalPos.x)*9.0 + 0.7);`;
+  }
+
   function makeOldFashioned(THREE, opts, rng) {
     const group = new THREE.Group();
-    const seeds = [rng() * 6.283, rng() * 6.283];
+    const seeds = [rng() * 6.283, rng() * 6.283, rng() * 6.283];
 
-    const doughGeo = cake(THREE, new THREE.TorusGeometry(RING$1, TUBE, 28, 200), RING$1, seeds);
+    const doughGeo = craggy(THREE, new THREE.TorusGeometry(RING$1, DOUGH_TUBE$1, 32, 260), RING$1, seeds);
     const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
     dough.castShadow = true; dough.receiveShadow = true;
     group.add(dough);
 
+    // glaze: same craggy field, a touch larger so it coats just outside the dough
+    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING$1, FROST_TUBE$1, 32, 260), RING$1, seeds);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+
     return {
       group,
-      topSurface: torusTopSampler(THREE, { ring: RING$1, tube: TUBE, rise: 0, minNormalY: 0.3 }),
+      topSurface: torusTopSampler(THREE, { ring: RING$1, tube: FROST_TUBE$1, rise: 0, minNormalY: 0.3 }),
       frame: {},
       dispose() {},
     };
@@ -568,7 +604,7 @@
   // dipped in glaze that follows the ridges.
   const RING = 0.95, DOUGH_TUBE = 0.44, FROST_TUBE = 0.47;
   const LOBES = 5;   // ridges around the tube cross-section
-  const TWIST = 3;   // full rotations of the star as you travel around the ring
+  const TWIST = 5;   // full rotations of the star as you travel around the ring
 
   // Displace a torus into a twisted-rope cruller, in the hole-axis-Y frame.
   // `seeds` are shared between dough and glaze so their ridges line up.

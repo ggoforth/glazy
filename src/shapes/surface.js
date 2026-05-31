@@ -27,17 +27,37 @@ export function torusTopSampler(THREE, { ring, tube, rise, minNormalY = 0.22 }) 
   };
 }
 
-// Top-face sampler for the bar: scatter across the rounded top plane.
-export function barTopSampler(THREE, { halfLen, halfWid, topY }) {
+// Top sampler for the flattened-capsule bar: scatter over the actual domed top
+// of a capsule (cylinder of half-length `a`, radius `R`, squashed vertically by
+// `hs`), out to the rounded ends. `clipY` keeps points on the glazed crown only.
+export function capsuleTopSampler(THREE, { a, R, hs, clipY }) {
+  const xMax = a + R * 0.8; // reach onto the rounded end caps
   return {
     sample(count, rng) {
       const out = [];
-      for (let i = 0; i < count; i++) {
-        const x = (rng() * 2 - 1) * halfLen;
-        const z = (rng() * 2 - 1) * halfWid;
+      let guard = 0;
+      while (out.length < count && guard < count * 60) {
+        guard++;
+        const x = (rng() * 2 - 1) * xMax;
+        const z = (rng() * 2 - 1) * R;
+        const ax = Math.abs(x);
+        let dy, nx;
+        if (ax <= a) {                          // cylindrical middle
+          const rem = R * R - z * z;
+          if (rem <= 0) continue;
+          dy = Math.sqrt(rem); nx = 0;
+        } else {                                // spherical end cap
+          const dx = ax - a;
+          const rem = R * R - dx * dx - z * z;
+          if (rem <= 0) continue;
+          dy = Math.sqrt(rem); nx = x < 0 ? -dx : dx;
+        }
+        const y = hs * dy;
+        if (y < clipY) continue;                // only where the glaze survives
         out.push({
-          position: new THREE.Vector3(x, topY, z),
-          normal: new THREE.Vector3(0, 1, 0),
+          position: new THREE.Vector3(x, y, z),
+          // un-squash the surface normal (scale (1,hs,1) → normal scale (1,1/hs,1))
+          normal: new THREE.Vector3(nx, dy / hs, z).normalize(),
           tangent: new THREE.Vector3(1, 0, 0),
         });
       }
