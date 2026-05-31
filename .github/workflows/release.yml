@@ -1,0 +1,43 @@
+name: release
+# When a vX.Y.Z tag is pushed: verify, rebuild dist, and (if it changed) commit
+# the built bundle and move the tag to it — so the jsDelivr-from-GitHub URLs
+# (cdn.jsdelivr.net/gh/ggoforth/glazy@<tag>/dist/...) always serve a fresh dist
+# with no manual build/commit step. A no-op if dist is already up to date.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+concurrency: release-${{ github.ref }}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Commit built dist to the tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -z "$(git status --porcelain dist)" ]; then
+            echo "dist already up to date at $TAG — nothing to do"
+            exit 0
+          fi
+          git add -f dist
+          git commit -m "build: dist for $TAG [skip ci]"
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            git push origin HEAD:main
+          else
+            echo "tag is not a fast-forward of main; updating the tag only"
+          fi
+          git tag -f "$TAG"
+          git push --force origin "refs/tags/$TAG"

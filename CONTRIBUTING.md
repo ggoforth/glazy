@@ -26,6 +26,23 @@ example workflows.
 Before opening a PR, make sure `npm run lint`, `npm test`, and `npm run build` all
 pass. `prepublishOnly` runs all three.
 
+## Releasing
+
+CI (`.github/workflows/ci.yml`) runs lint, test, and build on every push to `main`
+and on pull requests, but it does not publish anything.
+
+Distribution is via jsDelivr's GitHub passthrough at a tag
+(`cdn.jsdelivr.net/gh/ggoforth/glazy@<tag>/dist/...`). To cut a release:
+
+1. Bump `version` in `package.json` and `src/index.js`, add a `CHANGELOG.md` entry, commit, and push to `main`.
+2. Tag and push it: `git tag -a vX.Y.Z -m "glazy vX.Y.Z" && git push origin vX.Y.Z`.
+
+Pushing the tag triggers `.github/workflows/release.yml`, which verifies (lint +
+test), rebuilds `dist/`, and — if the bundle changed — commits it and moves the
+tag to the build commit, so the `@<tag>/dist/...` URLs always serve a fresh dist.
+You do not need to build or commit `dist/` by hand; if you already did, the
+release job is a no-op.
+
 ### Testing policy: no real WebGL in CI
 
 The test suite never creates a real WebGL context. Rendering code is exercised
