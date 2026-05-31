@@ -20,9 +20,6 @@
     button { font: inherit; padding: 6px 14px; border: 1px solid #b03a4a; background: #b03a4a; color: #fff; border-radius: 6px; cursor: pointer; }
     button.secondary { background: #fff; color: #b03a4a; }
   </style>
-  <script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
-  </script>
 </head>
 <body>
   <div id="stage"></div>
@@ -103,9 +100,11 @@
     </div>
   </div>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { DonutRenderer, presets } from '../dist/glazy.esm.js';
+  <!-- UMD globals so the page works opened directly as a file (no server needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="../dist/glazy.umd.js"></script>
+  <script>
+    const { DonutRenderer, presets } = Glazy;
 
     const $ = (id) => document.getElementById(id);
     const val = (id) => $(id).value;
