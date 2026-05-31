@@ -74,6 +74,19 @@
       background: #11141aaa; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px;
     }
     .badge b { color: var(--text); font-weight: 600; }
+    .zoomer {
+      position: absolute; left: 16px; bottom: 18px; z-index: 6; display: flex; align-items: stretch;
+      background: #11141aee; border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; backdrop-filter: blur(8px);
+    }
+    .zoomer button {
+      border: 0; background: transparent; color: var(--text); font: inherit; cursor: pointer;
+      padding: 0 12px; min-width: 36px; transition: background .12s;
+    }
+    .zoomer button:hover { background: #232833; }
+    .zoomer #zoomPct { min-width: 56px; font-variant-numeric: tabular-nums; color: var(--muted);
+      border-left: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 12px; }
+    .zoomer #zoomOut, .zoomer #zoomIn { font-size: 18px; line-height: 1; }
 
     /* ---- control sections ---- */
     .sec { margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel2); }
@@ -276,7 +289,6 @@
         <div class="sec">
           <h3><span class="ic">▦</span> Render</h3>
           <div class="pad">
-            <div class="row"><span class="name">zoom</span><input type="range" id="zoom" min="0.4" max="1.6" step="0.05" value="1"><span class="val" data-for="zoom"></span></div>
             <div class="row"><span class="name">px-ratio</span><input type="range" id="pixelRatioCap" min="1" max="3" step="0.5" value="2"><span class="val" data-for="pixelRatioCap"></span></div>
           </div>
         </div>
@@ -285,6 +297,12 @@
       <div class="stage-wrap">
         <div class="badge"><b id="badgeShape">ring</b> · <span id="badgeFinish">glaze</span></div>
         <div id="stage"></div>
+        <div class="zoomer">
+          <button id="zoomOut" title="Zoom out (−)">−</button>
+          <button id="zoomPct" title="Reset zoom">100%</button>
+          <button id="zoomIn" title="Zoom in (+)">+</button>
+          <input type="hidden" id="zoom" value="1">
+        </div>
         <div class="stage-tools">
           <button class="hbtn" id="shot2">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -396,6 +414,22 @@
     $('reset').addEventListener('click', () => location.reload());
     $('random').addEventListener('click', randomize);
     $('random2').addEventListener('click', randomize);
+
+    // on-canvas zoom widget (drives the hidden #zoom input)
+    function setZoom(z) {
+      z = Math.max(0.4, Math.min(1.8, Math.round(z * 100) / 100));
+      $('zoom').value = z;
+      $('zoomPct').textContent = Math.round(z * 100) + '%';
+      apply();
+    }
+    $('zoomIn').addEventListener('click', () => setZoom(num('zoom') + 0.1));
+    $('zoomOut').addEventListener('click', () => setZoom(num('zoom') - 0.1));
+    $('zoomPct').addEventListener('click', () => setZoom(1));
+    window.addEventListener('keydown', (e) => {
+      if (e.target.matches('input, select, textarea')) return;
+      if (e.key === '+' || e.key === '=') setZoom(num('zoom') + 0.1);
+      if (e.key === '-' || e.key === '_') setZoom(num('zoom') - 0.1);
+    });
 
     syncReadouts();
   </script>
