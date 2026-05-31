@@ -63,3 +63,65 @@ export function normalizeMotion(motion = {}, aliases = {}) {
   if (out.lean.source !== 'element') out.lean.source = 'window';
   return out;
 }
+
+const SHAPES = ['ring', 'bar', 'old-fashioned'];
+const TOPPINGS = ['sprinkles', 'nuts', 'none'];
+const FINISHES = ['glaze', 'frosting'];
+
+export const DEFAULTS = {
+  shape: 'ring',
+  dough: 0xdf9f48,
+  frost: 0xed4359,
+  frostFinish: 'glaze',
+  frostRoughness: null,    // null → finish-derived (see frostMaterial)
+  frostClearcoat: null,
+  glazeTextureScale: 1,
+  doughRoughness: 0.82,
+  doughGrain: 1,
+  crust: true,
+  fillLight: 0xffe6ef,
+  topping: 'sprinkles',
+  sprinkleColors: [0xffffff, 0xed4359, 0xee921a, 0x69c27e, 0x4087de, 0xaf62c1],
+  nutColors: [0xe6c89a, 0xd9b382, 0xc79a5b, 0xb07d45, 0x8a5a32],
+  toppingCount: 150,
+  reducedMotion: 'auto',
+  pixelRatioCap: 2,
+  seed: null,
+  materials: {},
+};
+
+function oneOf(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback;
+}
+
+export function normalizeOptions(input = {}) {
+  const o = { ...DEFAULTS, ...input };
+  const out = {
+    three: input.three ?? null,
+    shape: oneOf(o.shape, SHAPES, 'ring'),
+    dough: parseColor(o.dough, DEFAULTS.dough),
+    frost: parseColor(o.frost, DEFAULTS.frost),
+    frostFinish: oneOf(o.frostFinish, FINISHES, 'glaze'),
+    frostRoughness: o.frostRoughness == null ? null : Number(o.frostRoughness),
+    frostClearcoat: o.frostClearcoat == null ? null : Number(o.frostClearcoat),
+    glazeTextureScale: Number(o.glazeTextureScale) || 1,
+    doughRoughness: Number(o.doughRoughness),
+    doughGrain: Number(o.doughGrain) || 1,
+    crust: o.crust === true || o.crust === false ? o.crust : Number(o.crust),
+    fillLight: parseColor(o.fillLight, DEFAULTS.fillLight),
+    topping: oneOf(o.topping, TOPPINGS, 'sprinkles'),
+    sprinkleColors: (o.sprinkleColors || []).map((c) => parseColor(c, 0xffffff)),
+    nutColors: (o.nutColors || []).map((c) => parseColor(c, 0xc79a5b)),
+    toppingCount: clampInt(o.toppingCount, 0, 2000, DEFAULTS.toppingCount),
+    reducedMotion: o.reducedMotion === true || o.reducedMotion === false ? o.reducedMotion : 'auto',
+    pixelRatioCap: Number(o.pixelRatioCap) || 2,
+    seed: o.seed == null ? null : (o.seed >>> 0),
+    materials: o.materials || {},
+  };
+  out.motion = normalizeMotion(o.motion || {}, {
+    spinSpeed: input.spinSpeed,
+    wobble: input.wobble,
+    mouseLean: input.mouseLean,
+  });
+  return out;
+}
