@@ -112,7 +112,7 @@ src/
   three-compat.js     resolve THREE (injected | global), color-space setup, WebGL feature check
   seededRandom.js     mulberry32 PRNG for deterministic `seed`
   dispose.js          recursive GPU resource disposal helper
-  animation.js        turntable spin + wobble + eased mouse-lean, reduced-motion aware
+  animation.js        per-behavior motion driver: spin · wobble · bob · lean, reduced-motion aware
   lifecycle.js        ResizeObserver (size) + IntersectionObserver (pause off-screen)
   scene/
     lighting.js       ambient + key(shadow) + fill(tinted) + rim -> { group, dispose }
@@ -201,16 +201,50 @@ finish + texture, not just color.
 | `sprinkleColors` | color[] | brand palette | |
 | `nutColors` | color[] | tan→walnut | |
 | `toppingCount` | int | `150` | clamped `[0, 2000]` |
-| `spinSpeed` | number | `0.004` | |
-| `wobble` | bool | `true` | undulating sway/bob |
-| `mouseLean` | bool | `true` | eased lean toward cursor |
+| `motion` | object | see §5.1 | structured per-behavior motion/interaction config |
+| `spinSpeed` | number | `0.004` | flat alias → `motion.spin.speed` |
+| `wobble` | bool | `true` | flat alias → `motion.wobble.enabled` |
+| `mouseLean` | bool | `true` | flat alias → `motion.lean.enabled` |
 | `reducedMotion` | `'auto'` \| bool | `'auto'` | live-responsive via `matchMedia` |
 | `pixelRatioCap` | number | `2` | |
 | `seed` | int \| null | `null` | set → deterministic placement & colors |
 | `materials` | object | `{}` | deep-override escape hatch: `{ dough:{…}, frost:{…} }` |
 
 **Precedence:** `defaults < preset < explicit options`. For `autoInit`, the parsed
-`data-*` attributes **are** the explicit options.
+`data-*` attributes **are** the explicit options. Where a flat alias and the
+structured `motion` object both set the same value, the structured `motion` wins.
+
+### 5.1 Motion & interaction (`motion`)
+
+Each behavior is independently toggleable and tunable. Every sub-object also
+accepts a boolean shorthand (`spin: false` = off, `spin: true` = defaults).
+
+```js
+motion: {
+  spin:   { enabled: true, speed: 0.004, direction: 1 },                    // turntable yaw about the hole axis; direction ±1
+  wobble: { enabled: true, amplitude: 0.05, speed: 0.9 },                   // undulating sway: oscillating pitch + roll
+  bob:    { enabled: true, amplitude: 0.045, speed: 1.1 },                  // vertical float / drift up-down
+  lean:   { enabled: true, strength: 0.16, ease: 0.045, source: 'window' }, // eased tilt toward pointer
+}
+```
+
+| Behavior | Knobs | Maps to (reference) |
+|---|---|---|
+| `spin` | `enabled`, `speed`, `direction` (±1) | `spinner.rotation.y = t` |
+| `wobble` | `enabled`, `amplitude`, `speed` | `donut.rotation.x/z = sin(t·k)·amp` |
+| `bob` | `enabled`, `amplitude`, `speed` | `donut.position.y = sin(t·k)·amp` |
+| `lean` | `enabled`, `strength`, `ease`, `source` | eased pointer follow + tilt |
+
+- **`lean.source`**: `'window'` (default — tilts toward the pointer anywhere on the
+  page, matching the reference) or `'element'` (only while the pointer is over the
+  donut's own element; better when several donuts share a page).
+- **`lean.ease`** is the smoothing factor (reference uses `0.045`): lower = lazier
+  follow, higher = snappier.
+- **Reduced motion** suppresses **all four** behaviors (lean included, since
+  pointer-driven tilt is motion) and renders a single static frame.
+- **Scope:** v1 "interaction" is the eased pointer-lean only; drag-to-spin /
+  orbit-zoom are out of scope, but the `motion` system is structured so an
+  `interaction` driver could be added later without reshaping the API.
 
 **Normalization rules:**
 - Colors: parse `0xRRGGBB` numbers, `'#rrggbb'`, `'rrggbb'`, or names already
@@ -250,8 +284,10 @@ autoInit('[data-donut]'); // scan DOM, one renderer per element (auto-runs in UM
 
 ### data-* attributes (autoInit)
 `data-donut` (marker), `data-shape`, `data-preset`, `data-frost`, `data-dough`,
-`data-frost-finish`, `data-topping`, `data-count`, `data-spin-speed`, `data-fill`,
-`data-wobble`, `data-mouse-lean`, `data-seed`. Multiple instances per page supported.
+`data-frost-finish`, `data-topping`, `data-count`, `data-fill`, `data-seed`, and the
+flat motion knobs: `data-spin-speed`, `data-spin-direction`, `data-wobble`,
+`data-bob`, `data-mouse-lean`, `data-lean-strength`, `data-lean-source`. Multiple
+instances per page supported.
 
 ---
 
@@ -317,6 +353,9 @@ PMREMGenerator) with `dispose` spies.
 Test coverage:
 - **options.js**: hex parsing (all accepted forms + invalid fallback), count
   clamping, boolean coercion, unknown enum fallback.
+- **motion normalization**: boolean shorthand expands to defaults/disabled; flat
+  aliases (`spinSpeed`/`wobble`/`mouseLean`) map into `motion`; structured `motion`
+  wins over a conflicting flat alias; `reducedMotion` suppresses all behaviors.
 - **presets.js**: preset merge + precedence (`defaults < preset < explicit`).
 - **autoInit.js**: element discovery, multiple instances, `data-*` parsing.
 - **seededRandom.js**: same seed → identical sequence; different seed → different.
