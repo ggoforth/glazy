@@ -3,101 +3,295 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>glazy - live controls</title>
+  <title>glazy studio - donut editor</title>
   <style>
-    body { margin: 0; background: #faf7f2; font: 13px system-ui, sans-serif; color: #2b2b2b; }
-    #stage { position: relative; width: 100vw; height: 56vh; }
-    .panel { padding: 12px 16px 28px; }
-    .groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; max-width: 1100px; margin: 0 auto; }
-    fieldset { border: 1px solid #e4ddd0; border-radius: 8px; padding: 10px 12px; margin: 0; }
-    legend { font-weight: 600; color: #b03a4a; padding: 0 4px; }
-    label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
-    label > span { color: #555; white-space: nowrap; }
-    input[type="range"] { width: 110px; }
-    input[type="color"] { width: 38px; height: 22px; padding: 0; border: 1px solid #ccc; }
-    input[type="text"], input[type="number"], select { font: inherit; padding: 2px 4px; max-width: 130px; }
-    .actions { text-align: center; margin: 14px 0 0; }
-    button { font: inherit; padding: 6px 14px; border: 1px solid #b03a4a; background: #b03a4a; color: #fff; border-radius: 6px; cursor: pointer; }
-    button.secondary { background: #fff; color: #b03a4a; }
+    :root {
+      --bg: #0e1014; --panel: #171a21; --panel2: #1d212a; --border: #272c37;
+      --text: #d6dae3; --muted: #828b9b; --accent: #ed4359; --accent-soft: #ed435922;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased; overflow: hidden;
+    }
+    .app { display: grid; grid-template-rows: 52px 1fr; height: 100vh; }
+
+    /* ---- header ---- */
+    header {
+      display: flex; align-items: center; gap: 16px; padding: 0 16px;
+      background: linear-gradient(180deg, #1b1f27, #15181f);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: .2px; }
+    .brand .dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ff7088, var(--accent) 55%, #b3263a);
+      box-shadow: 0 0 0 3px #ed43591f, inset 0 0 0 4px #0e1014;
+    }
+    .brand small { color: var(--muted); font-weight: 500; }
+    header .spacer { flex: 1; }
+    .hbtn {
+      display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 13px;
+      border: 1px solid var(--border); background: var(--panel2); color: var(--text);
+      border-radius: 8px; font: inherit; font-weight: 550; cursor: pointer; transition: .15s;
+    }
+    .hbtn:hover { border-color: #3a4151; background: #232833; }
+    .hbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .hbtn.primary:hover { background: #f15268; }
+    .hbtn svg { width: 15px; height: 15px; }
+
+    /* ---- layout ---- */
+    .body { display: grid; grid-template-columns: 320px 1fr; min-height: 0; }
+    aside {
+      background: var(--panel); border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 14px;
+    }
+    aside::-webkit-scrollbar { width: 10px; }
+    aside::-webkit-scrollbar-thumb { background: #2b313d; border-radius: 6px; border: 3px solid var(--panel); }
+
+    /* ---- stage ---- */
+    .stage-wrap { position: relative; min-width: 0; overflow: hidden;
+      background:
+        radial-gradient(120% 90% at 50% 34%, #2b313d 0%, #171b22 55%, #0e1014 100%);
+    }
+    .stage-wrap::after { /* vignette */
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      box-shadow: inset 0 0 220px 40px #00000080;
+    }
+    #stage { position: absolute; inset: 0; }
+    .stage-tools {
+      position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 5;
+      background: #11141aee; border: 1px solid var(--border); border-radius: 12px;
+      padding: 7px; backdrop-filter: blur(8px);
+    }
+    .badge {
+      position: absolute; top: 16px; left: 16px; z-index: 5;
+      font-size: 11px; color: var(--muted); letter-spacing: .4px; text-transform: uppercase;
+      background: #11141aaa; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px;
+    }
+    .badge b { color: var(--text); font-weight: 600; }
+
+    /* ---- control sections ---- */
+    .sec { margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel2); }
+    .sec > h3 {
+      margin: 0; padding: 11px 13px; font-size: 11px; font-weight: 650; letter-spacing: .7px;
+      text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sec > h3 .ic { color: var(--accent); display: inline-flex; }
+    .sec .pad { padding: 11px 13px; display: grid; gap: 11px; }
+
+    .row { display: grid; grid-template-columns: 84px 1fr auto; align-items: center; gap: 10px; }
+    .row > .name { color: var(--muted); font-weight: 500; }
+    .row .val { color: var(--text); font-variant-numeric: tabular-nums; font-size: 12px; min-width: 34px; text-align: right; }
+
+    /* sliders */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+      background: #2b313d; border-radius: 4px; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: 2px solid #fff;
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+      cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    /* segmented control */
+    .seg { display: flex; background: #11141a; border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 3px; }
+    .seg button {
+      flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 550;
+      padding: 6px 4px; border-radius: 6px; cursor: pointer; transition: .12s; white-space: nowrap;
+    }
+    .seg button:hover { color: var(--text); }
+    .seg button.on { background: var(--accent); color: #fff; }
+    .seg.sm button { font-size: 12px; padding: 5px 4px; }
+    .seg.wrap { flex-wrap: wrap; } .seg.wrap button { flex: 1 1 30%; }
+
+    /* preset chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { border: 1px solid var(--border); background: #11141a; color: var(--text);
+      border-radius: 20px; padding: 5px 12px; font: inherit; font-weight: 550; cursor: pointer; transition: .12s; }
+    .chip:hover { border-color: var(--accent); }
+    .chip .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+    /* color swatch */
+    .swatch { display: flex; align-items: center; gap: 9px; }
+    .swatch input[type=color] {
+      -webkit-appearance: none; appearance: none; width: 30px; height: 30px; padding: 0;
+      border: 1px solid var(--border); border-radius: 8px; background: none; cursor: pointer;
+    }
+    .swatch input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+    .swatch input[type=color]::-webkit-color-swatch { border: none; border-radius: 6px; }
+    .swatch .hex { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* toggle */
+    .switch { position: relative; width: 38px; height: 21px; flex: none; cursor: pointer;
+      background: #2b313d; border-radius: 11px; transition: background .18s; }
+    .switch input { display: none; }
+    .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px;
+      border-radius: 50%; background: #868d9c; transition: .18s; }
+    .switch.on { background: var(--accent); }
+    .switch.on::after { left: 19px; background: #fff; }
+
+    select, input[type=text], input[type=number] {
+      background: #11141a; color: var(--text); border: 1px solid var(--border);
+      border-radius: 7px; padding: 6px 8px; font: inherit; width: 100%;
+    }
+    input[type=text]::placeholder { color: #5c6473; }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+    .full { grid-column: 1 / -1; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .app { grid-template-rows: 52px auto auto; height: auto; }
+      .body { grid-template-columns: 1fr; }
+      .stage-wrap { height: 56vh; } aside { max-height: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="stage"></div>
+  <div class="app">
+    <header>
+      <div class="brand"><span class="dot"></span> glazy&nbsp;<small>studio</small></div>
+      <div class="spacer"></div>
+      <button class="hbtn" id="random" title="Randomize seed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7M21 16v5h-5M15 15l6 6M3 8V3h5M9 9 3 3"/></svg>
+        Randomize
+      </button>
+      <button class="hbtn" id="reset">Reset</button>
+      <button class="hbtn primary" id="shot">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export PNG
+      </button>
+    </header>
 
-  <div class="panel">
-    <div class="groups">
-      <fieldset>
-        <legend>Shape &amp; preset</legend>
-        <label><span>shape</span>
-          <select id="shape"><option>ring</option><option>bar</option><option>old-fashioned</option><option>cruller</option></select></label>
-        <label><span>preset</span>
-          <select id="preset"><option value="">(none)</option><option>strawberry</option><option>blueberry</option><option>matcha</option><option>chocolate</option></select></label>
-        <label><span>seed</span><input type="number" id="seed" placeholder="random"></label>
-      </fieldset>
+    <div class="body">
+      <aside>
+        <!-- Shape & preset -->
+        <div class="sec">
+          <h3><span class="ic">◆</span> Shape</h3>
+          <div class="pad">
+            <div class="seg wrap" data-target="shape">
+              <button data-v="ring">Ring</button>
+              <button data-v="bar">Bar</button>
+              <button data-v="old-fashioned">Old-fash.</button>
+              <button data-v="cruller">Cruller</button>
+            </div>
+            <select id="shape" hidden>
+              <option>ring</option><option>bar</option><option>old-fashioned</option><option>cruller</option>
+            </select>
+            <div class="chips" id="presetChips">
+              <button class="chip" data-preset="strawberry"><span class="sw" style="background:#ed4359"></span>Strawberry</button>
+              <button class="chip" data-preset="blueberry"><span class="sw" style="background:#3a73cf"></span>Blueberry</button>
+              <button class="chip" data-preset="matcha"><span class="sw" style="background:#8fbf6f"></span>Matcha</button>
+              <button class="chip" data-preset="chocolate"><span class="sw" style="background:#4a2c1a"></span>Chocolate</button>
+            </div>
+            <select id="preset" hidden><option value=""></option><option>strawberry</option><option>blueberry</option><option>matcha</option><option>chocolate</option></select>
+            <div class="row"><span class="name">seed</span><input type="number" id="seed" placeholder="random"><span></span></div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Colors</legend>
-        <label><span>frost / glaze</span><input type="color" id="frost" value="#ed4359"></label>
-        <label><span>dough</span><input type="color" id="dough" value="#df9f48"></label>
-        <label><span>fill light</span><input type="color" id="fill" value="#ffe6ef"></label>
-      </fieldset>
+        <!-- Colors -->
+        <div class="sec">
+          <h3><span class="ic">●</span> Colors</h3>
+          <div class="pad">
+            <div class="row"><span class="name">frost</span><div class="swatch"><input type="color" id="frost" value="#ed4359"><span class="hex" data-hex="frost">#ed4359</span></div><span></span></div>
+            <div class="row"><span class="name">dough</span><div class="swatch"><input type="color" id="dough" value="#df9f48"><span class="hex" data-hex="dough">#df9f48</span></div><span></span></div>
+            <div class="row"><span class="name">fill light</span><div class="swatch"><input type="color" id="fill" value="#ffe6ef"><span class="hex" data-hex="fill">#ffe6ef</span></div><span></span></div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Frosting</legend>
-        <label><span>finish</span><select id="finish"><option>glaze</option><option>frosting</option><option>plain</option><option>none</option></select></label>
-        <label><span>roughness</span><input type="range" id="frostRoughness" min="0" max="1" step="0.02" value="0.3"></label>
-        <label><span>clearcoat</span><input type="range" id="frostClearcoat" min="0" max="1" step="0.02" value="1"></label>
-        <label><span>texture scale</span><input type="range" id="glazeTextureScale" min="0" max="3" step="0.1" value="1"></label>
-      </fieldset>
+        <!-- Frosting -->
+        <div class="sec">
+          <h3><span class="ic">✦</span> Frosting</h3>
+          <div class="pad">
+            <div class="seg sm full" data-target="finish">
+              <button data-v="glaze">Glaze</button>
+              <button data-v="frosting">Frosting</button>
+              <button data-v="plain">Plain</button>
+              <button data-v="none">None</button>
+            </div>
+            <select id="finish" hidden><option>glaze</option><option>frosting</option><option>plain</option><option>none</option></select>
+            <div class="row"><span class="name">roughness</span><input type="range" id="frostRoughness" min="0" max="1" step="0.02" value="0.3"><span class="val" data-for="frostRoughness"></span></div>
+            <div class="row"><span class="name">clearcoat</span><input type="range" id="frostClearcoat" min="0" max="1" step="0.02" value="1"><span class="val" data-for="frostClearcoat"></span></div>
+            <div class="row"><span class="name">texture</span><input type="range" id="glazeTextureScale" min="0" max="3" step="0.1" value="1"><span class="val" data-for="glazeTextureScale"></span></div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Dough</legend>
-        <label><span>roughness</span><input type="range" id="doughRoughness" min="0" max="1" step="0.02" value="0.82"></label>
-        <label><span>grain</span><input type="range" id="doughGrain" min="0" max="3" step="0.1" value="1"></label>
-        <label><span>crust</span><input type="range" id="crust" min="0" max="2" step="0.1" value="1"></label>
-      </fieldset>
+        <!-- Dough -->
+        <div class="sec">
+          <h3><span class="ic">◐</span> Dough</h3>
+          <div class="pad">
+            <div class="row"><span class="name">roughness</span><input type="range" id="doughRoughness" min="0" max="1" step="0.02" value="0.82"><span class="val" data-for="doughRoughness"></span></div>
+            <div class="row"><span class="name">grain</span><input type="range" id="doughGrain" min="0" max="3" step="0.1" value="1"><span class="val" data-for="doughGrain"></span></div>
+            <div class="row"><span class="name">crust</span><input type="range" id="crust" min="0" max="2" step="0.1" value="1"><span class="val" data-for="crust"></span></div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Toppings</legend>
-        <label><span>type</span><select id="topping"><option>sprinkles</option><option>nuts</option><option>coconut</option><option>none</option></select></label>
-        <label><span>count</span><input type="range" id="toppingCount" min="0" max="400" step="10" value="150"></label>
-        <label><span>sprinkle colors</span><input type="text" id="sprinkleColors" placeholder="#fff,#ed4359,..."></label>
-        <label><span>nut colors</span><input type="text" id="nutColors" placeholder="#e6c89a,..."></label>
-        <label><span>coconut colors</span><input type="text" id="coconutColors" placeholder="#fffaf0,..."></label>
-      </fieldset>
+        <!-- Toppings -->
+        <div class="sec">
+          <h3><span class="ic">✺</span> Toppings</h3>
+          <div class="pad">
+            <div class="seg sm wrap" data-target="topping">
+              <button data-v="sprinkles">Sprinkles</button>
+              <button data-v="nuts">Nuts</button>
+              <button data-v="coconut">Coconut</button>
+              <button data-v="none">None</button>
+            </div>
+            <select id="topping" hidden><option>sprinkles</option><option>nuts</option><option>coconut</option><option>none</option></select>
+            <div class="row"><span class="name">count</span><input type="range" id="toppingCount" min="0" max="400" step="10" value="150"><span class="val" data-for="toppingCount"></span></div>
+            <input class="full" type="text" id="sprinkleColors" placeholder="sprinkle colors  #fff,#ed4359,…">
+            <input class="full" type="text" id="nutColors" placeholder="nut colors  #e6c89a,…">
+            <input class="full" type="text" id="coconutColors" placeholder="coconut colors  #fffaf0,…">
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Motion - spin</legend>
-        <label><span>enabled</span><input type="checkbox" id="spin" checked></label>
-        <label><span>speed</span><input type="range" id="spinSpeed" min="0" max="0.02" step="0.001" value="0.004"></label>
-        <label><span>direction</span><select id="spinDir"><option value="1">1</option><option value="-1">-1</option></select></label>
-      </fieldset>
+        <!-- Motion -->
+        <div class="sec">
+          <h3><span class="ic">↻</span> Motion</h3>
+          <div class="pad">
+            <div class="row"><span class="name">spin</span><input type="range" id="spinSpeed" min="0" max="0.02" step="0.001" value="0.004"><label class="switch"><input type="checkbox" id="spin" checked></label></div>
+            <div class="row"><span class="name">direction</span><div class="seg sm" data-target="spinDir"><button data-v="1">CW</button><button data-v="-1">CCW</button></div><span></span></div>
+            <select id="spinDir" hidden><option value="1">1</option><option value="-1">-1</option></select>
+            <div class="row"><span class="name">wobble</span><input type="range" id="wobbleAmp" min="0" max="0.2" step="0.01" value="0.05"><label class="switch"><input type="checkbox" id="wobble" checked></label></div>
+            <div class="row"><span class="name">bob</span><input type="range" id="bobAmp" min="0" max="0.15" step="0.01" value="0.045"><label class="switch"><input type="checkbox" id="bob" checked></label></div>
+            <div class="row"><span class="name">lean</span><input type="range" id="leanStrength" min="0" max="0.5" step="0.02" value="0.16"><label class="switch"><input type="checkbox" id="lean" checked></label></div>
+            <div class="two">
+              <select id="leanSource"><option>window</option><option>element</option></select>
+              <select id="reducedMotion"><option>auto</option><option>true</option><option>false</option></select>
+            </div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Motion - wobble &amp; bob</legend>
-        <label><span>wobble</span><input type="checkbox" id="wobble" checked></label>
-        <label><span>wobble amp</span><input type="range" id="wobbleAmp" min="0" max="0.2" step="0.01" value="0.05"></label>
-        <label><span>bob</span><input type="checkbox" id="bob" checked></label>
-        <label><span>bob amp</span><input type="range" id="bobAmp" min="0" max="0.15" step="0.01" value="0.045"></label>
-      </fieldset>
+        <!-- Render -->
+        <div class="sec">
+          <h3><span class="ic">▦</span> Render</h3>
+          <div class="pad">
+            <div class="row"><span class="name">px-ratio</span><input type="range" id="pixelRatioCap" min="1" max="3" step="0.5" value="2"><span class="val" data-for="pixelRatioCap"></span></div>
+          </div>
+        </div>
+      </aside>
 
-      <fieldset>
-        <legend>Motion - lean</legend>
-        <label><span>enabled</span><input type="checkbox" id="lean" checked></label>
-        <label><span>strength</span><input type="range" id="leanStrength" min="0" max="0.5" step="0.02" value="0.16"></label>
-        <label><span>source</span><select id="leanSource"><option>window</option><option>element</option></select></label>
-        <label><span>reduced motion</span><select id="reducedMotion"><option>auto</option><option>true</option><option>false</option></select></label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Render</legend>
-        <label><span>pixel-ratio cap</span><input type="range" id="pixelRatioCap" min="1" max="3" step="0.5" value="2"></label>
-      </fieldset>
-    </div>
-
-    <div class="actions">
-      <button id="shot">Screenshot PNG</button>
-      <button id="reset" class="secondary">Reset</button>
+      <div class="stage-wrap">
+        <div class="badge"><b id="badgeShape">ring</b> · <span id="badgeFinish">glaze</span></div>
+        <div id="stage"></div>
+        <div class="stage-tools">
+          <button class="hbtn" id="shot2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export
+          </button>
+          <button class="hbtn" id="random2">Randomize</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -106,7 +300,6 @@
   <script src="../dist/glazy.umd.js"></script>
   <script>
     const { DonutRenderer, presets } = Glazy;
-
     const $ = (id) => document.getElementById(id);
     const val = (id) => $(id).value;
     const num = (id) => parseFloat(val(id));
@@ -140,38 +333,69 @@
       return o;
     }
 
-    const stage = $('stage');
-    let donut = new DonutRenderer(stage, gather());
+    const donut = new DonutRenderer($('stage'), gather());
 
-    // Debounced apply: setOptions rebuilds the donut, so coalesce rapid input.
     let timer = 0;
-    const apply = () => { clearTimeout(timer); timer = setTimeout(() => donut.setOptions(gather()), 40); };
+    function apply() {
+      clearTimeout(timer);
+      timer = setTimeout(() => donut.setOptions(gather()), 40);
+      syncReadouts();
+    }
 
-    // Load a preset's values INTO the controls (controls stay the source of truth,
-    // so they don't fight the preset via the defaults<preset<explicit order).
+    // ---- display sync (value badges, hex, toggles, segmented, badge) ----
+    function syncReadouts() {
+      document.querySelectorAll('.val').forEach((el) => { el.textContent = val(el.dataset.for); });
+      document.querySelectorAll('.hex').forEach((el) => { el.textContent = val(el.dataset.hex); });
+      document.querySelectorAll('.switch').forEach((sw) => sw.classList.toggle('on', sw.querySelector('input').checked));
+      document.querySelectorAll('.seg').forEach((seg) => {
+        const v = $(seg.dataset.target).value;
+        seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+      });
+      $('badgeShape').textContent = val('shape');
+      $('badgeFinish').textContent = val('finish');
+    }
+
+    // segmented controls drive the hidden selects
+    document.querySelectorAll('.seg').forEach((seg) => {
+      seg.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        $(seg.dataset.target).value = b.dataset.v; apply();
+      });
+    });
+
+    // preset chips load values into the controls (controls stay the source of truth)
     function loadPreset(name) {
-      const p = presets[name];
-      if (!p) return;
+      const p = presets[name]; if (!p) return;
       if (p.frost != null) $('frost').value = toHex(p.frost);
       if (p.dough != null) $('dough').value = toHex(p.dough);
       if (p.fillLight != null) $('fill').value = toHex(p.fillLight);
       if (p.frostFinish) $('finish').value = p.frostFinish;
       if (p.topping) $('topping').value = p.topping;
     }
+    document.querySelectorAll('.chip[data-preset]').forEach((c) => {
+      c.addEventListener('click', () => { loadPreset(c.dataset.preset); apply(); });
+    });
 
-    $('preset').addEventListener('change', (e) => { loadPreset(e.target.value); apply(); });
-    document.querySelectorAll('input, select').forEach((el) => {
-      if (el.id === 'preset') return;
+    // every plain input/select drives a re-render
+    document.querySelectorAll('aside input, aside select').forEach((el) => {
+      if (el.hidden) return;
       el.addEventListener('input', apply);
     });
+    document.querySelectorAll('.switch input').forEach((el) => el.addEventListener('change', apply));
 
-    $('shot').addEventListener('click', () => {
+    // actions
+    function exportPng() {
       const a = document.createElement('a');
-      a.href = donut.screenshot();
-      a.download = 'donut.png';
-      a.click();
-    });
+      a.href = donut.screenshot(); a.download = 'donut.png'; a.click();
+    }
+    function randomize() { $('seed').value = Math.floor(Math.random() * 100000); apply(); }
+    $('shot').addEventListener('click', exportPng);
+    $('shot2').addEventListener('click', exportPng);
     $('reset').addEventListener('click', () => location.reload());
+    $('random').addEventListener('click', randomize);
+    $('random2').addEventListener('click', randomize);
+
+    syncReadouts();
   </script>
 </body>
 </html>
