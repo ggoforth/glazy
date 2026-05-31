@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>glazy - no-build / CDN (import map)</title>
+  <style>
+    body { margin: 0; background: #faf7f2; font: 14px system-ui, sans-serif; color: #333; }
+    h1 { text-align: center; padding: 24px 0 0; font-weight: 600; }
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 16px; }
+    .donut { position: relative; height: 52vh; }
+    figcaption { text-align: center; color: #777; margin-top: 4px; }
+  </style>
+
+  <!-- 1. Supply Three.js through an import map. glazy resolves "three" from here. -->
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <h1>glazy on a no-build static site (jsDelivr + import map)</h1>
+
+  <div class="row">
+    <figure style="margin:0">
+      <div class="donut" data-donut data-preset="strawberry"></div>
+      <figcaption>data-preset="strawberry"</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="donut" data-donut data-preset="blueberry" data-topping="nuts"></div>
+      <figcaption>data-preset="blueberry" data-topping="nuts"</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="donut" data-donut data-preset="strawberry"></div>
+      <figcaption>data-preset="strawberry"</figcaption>
+    </figure>
+  </div>
+
+  <!-- 2. Load glazy from jsDelivr's GitHub passthrough at a pinned tag, then auto-init. -->
+  <script type="module">
+    import { autoInit } from 'https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.esm.js';
+    autoInit();
+  </script>
+</body>
+</html>

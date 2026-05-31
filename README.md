@@ -9,18 +9,42 @@ Pick a preset, a shape, and a topping, or wire it up to live controls. Three.js 
 
 ## Install
 
-npm (install Three.js alongside it):
+> The name `glazy` on npm is an unrelated package, so `npm i glazy` will not install this library. Distribution is via jsDelivr's GitHub passthrough against a tagged release. Pin a tag (not `@main`, which is mutable).
 
-```sh
-npm i glazy three
-```
-
-Script tag / CDN. Load Three.js first, then the UMD bundle:
+Script tag / CDN (UMD global). Load Three.js first, then the UMD bundle:
 
 ```html
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/glazy/dist/glazy.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.umd.js"></script>
 ```
+
+ES module (import map). See the next section for a full copy-pasteable snippet.
+
+```js
+import { DonutRenderer, autoInit } from 'https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.esm.js';
+```
+
+If you build with a bundler, you can vendor the files or add a `package.json` git/file dependency pointing at this repo; the public package name on npm is not this library.
+
+## No-build / static site (import map)
+
+For a no-bundler static site (plain `.html` on S3 or any host), supply Three.js through an import map and load glazy from jsDelivr. glazy resolves `three` from the same import map, so you do not pass it or set a global. This snippet is copy-pasteable as-is:
+
+```html
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+  import { autoInit } from 'https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.esm.js';
+  autoInit();
+</script>
+
+<div data-donut data-preset="strawberry"></div>
+<div data-donut data-preset="blueberry" data-topping="nuts"></div>
+<div data-donut data-preset="strawberry"></div>
+```
+
+`autoInit()` scans for `[data-donut]` elements and mounts one renderer per element, reading config from `data-*` attributes (see the table below). Multiple instances per page are supported. Each `[data-donut]` element should be positioned (give it a width and height); the canvas fills it. A runnable copy is in [`examples/cdn.html`](examples/cdn.html).
 
 ## Quick start (global / `<script>`)
 
@@ -31,8 +55,8 @@ The UMD bundle exposes a global `Glazy`. Three.js must be loaded first as the gl
 <style>body{margin:0;background:#faf7f2}.donut-stage{position:relative;width:100vw;height:100vh}</style></head>
 <body>
   <div class="donut-stage" id="stage"></div>
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="../dist/glazy.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.umd.js"></script>
   <script>new Glazy.DonutRenderer(document.getElementById('stage'), { preset: 'strawberry' });</script>
 </body></html>
 ```
@@ -46,12 +70,12 @@ See [`examples/global.html`](examples/global.html).
 ```html
 <!doctype html><html><head><meta charset="utf-8"><title>glazy</title>
 <style>body{margin:0;background:#faf7f2}#stage{position:relative;width:100vw;height:100vh}</style>
-<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head><body>
   <div id="stage"></div>
   <script type="module">
     import * as THREE from 'three';
-    import { DonutRenderer } from '../dist/glazy.esm.js';
+    import { DonutRenderer } from 'https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.esm.js';
     new DonutRenderer(document.getElementById('stage'), { three: THREE, shape: 'old-fashioned', frost: 0x8fbf6f });
   </script>
 </body></html>
@@ -97,8 +121,8 @@ Booleans: `"true"`, `""` (bare attribute), or a present attribute mean `true`; `
 ```html
 <div data-donut data-preset="strawberry"></div>
 <div data-donut data-preset="chocolate" data-shape="bar"></div>
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="../dist/glazy.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ggoforth/glazy@v0.1.1/dist/glazy.umd.js"></script>
 ```
 
 See [`examples/autoinit.html`](examples/autoinit.html).
@@ -109,7 +133,7 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| `three` | THREE \| null | `null` | injected; falls back to global `THREE` |
+| `three` | THREE \| null | `null` | injected; falls back to global `THREE`, then to a bundled bare `three` import (resolved by an import map) |
 | `shape` | string | `'ring'` | `'ring'`, `'bar'`, `'old-fashioned'` |
 | `preset` | string \| null | `null` | merged under explicit options |
 | `dough` | color | `0xdf9f48` | accepts `0xRRGGBB`, `'#rrggbb'`, `'rrggbb'`, number |
@@ -188,11 +212,11 @@ new DonutRenderer('#stage', { three: THREE, preset: 'matcha' });
 
 ## Three.js compatibility
 
-glazy requires `three >= r160` and is tested against `three` r160.0.
+glazy requires `three >= r160` and is tested against `three` r160.0. Known-good CDN builds: `https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js` for the ESM/import-map path and `https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js` for the UMD/global path.
 
 It uses the modern Three.js color-space API (`renderer.outputColorSpace = THREE.SRGBColorSpace` and per-texture `colorSpace`), which replaced the `outputEncoding` / `sRGBEncoding` API removed before r160. Version-sensitive color handling is isolated in `src/three-compat.js` and `src/materials/textures.js` (color maps tagged sRGB, normal maps left linear).
 
-If Three.js cannot be resolved (no injected `three` and no global `THREE`), glazy logs one warning and returns an inert instance whose methods are safe no-ops. It never throws.
+Three is a peer dependency and is never bundled. glazy finds it in this order: an injected `three` option, a global `THREE`, then a bundled bare `import ... from 'three'` that an import map resolves. If none resolve, glazy logs one warning and returns an inert instance whose methods are safe no-ops. It never throws.
 
 ## Lifecycle and SPA use
 

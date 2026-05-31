@@ -1,8 +1,10 @@
 {
   "name": "glazy",
-  "version": "0.1.0",
-  "description": "Spinning, photoreal-ish 3D donuts in a <canvas>, powered by Three.js.",
+  "version": "0.1.1",
+  "description": "Spinning 3D donuts in a <canvas>, rendered with Three.js.",
   "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/ggoforth/glazy.git" },
+  "homepage": "https://github.com/ggoforth/glazy#readme",
   "main": "dist/glazy.umd.js",
   "module": "dist/glazy.esm.js",
   "types": "dist/glazy.d.ts",

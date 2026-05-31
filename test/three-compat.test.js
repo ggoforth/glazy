@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import * as THREE from 'three';
 import { resolveThree, isWebGLAvailable } from '../src/three-compat.js';
 
 describe('resolveThree', () => {
@@ -12,10 +13,10 @@ describe('resolveThree', () => {
     expect(resolveThree(null)).toBe(fake);
     delete globalThis.THREE;
   });
-  it('returns null (with warn) when none available', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    expect(resolveThree(null)).toBe(null);
-    warn.mockRestore();
+  it('falls back to the bundled (peer/import-map) three when nothing is injected or global', () => {
+    // three is a peer dep marked external; the bare import resolves to the real
+    // module here, an import map in the browser ESM build, or the global in UMD.
+    expect(resolveThree(null)).toBe(THREE);
   });
 });
 
