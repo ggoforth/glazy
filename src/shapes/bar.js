@@ -8,7 +8,7 @@ import { capsuleTopSampler } from './surface.js';
 // tear. The capsule is laid along X and squashed in Y into a flat bar.
 const LEN = 2.6;    // total length (X)
 const WID = 1.15;   // width (Z) = capsule diameter
-const HEIGHT = 0.5; // total height (Y) after flattening
+const HEIGHT = 0.64; // total height (Y) after flattening
 
 // radius r, cylinder length l, vertical squash so total height becomes `height`.
 function flatCapsule(THREE, r, l, height) {
@@ -37,15 +37,18 @@ export function makeBar(THREE, opts, rng) {
 
   // glaze: a thin concentric shell hugging the body, clipped to a top cap
   const rf = r + 0.015, hf = HEIGHT + 0.02;
-  const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
+    toppingScale: 0.6, // the bar is smaller than the ring, so shrink its toppings
     // scatter over the glazed crown along the whole length, out to the rounded ends
-    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.15 }),
+    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.18 }),
     frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
     dispose() {},
   };

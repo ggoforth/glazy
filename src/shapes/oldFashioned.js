@@ -56,10 +56,12 @@ export function makeOldFashioned(THREE, opts, rng) {
   group.add(dough);
 
   // glaze: same craggy field, a touch larger so it coats just outside the dough
-  const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 32, 260), RING, seeds);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 32, 260), RING, seeds);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,

@@ -1,8 +1,8 @@
 // types/glazy.d.ts
 export type ColorInput = number | string;
 export type Shape = 'ring' | 'bar' | 'old-fashioned' | 'cruller';
-export type Topping = 'sprinkles' | 'nuts' | 'none';
-export type FrostFinish = 'glaze' | 'frosting';
+export type Topping = 'sprinkles' | 'nuts' | 'coconut' | 'none';
+export type FrostFinish = 'glaze' | 'frosting' | 'plain' | 'none';
 
 export interface BehaviorSpin { enabled?: boolean; speed?: number; direction?: 1 | -1; }
 export interface BehaviorOsc { enabled?: boolean; amplitude?: number; speed?: number; }
@@ -31,6 +31,7 @@ export interface DonutOptions {
   topping?: Topping;
   sprinkleColors?: ColorInput[];
   nutColors?: ColorInput[];
+  coconutColors?: ColorInput[];
   toppingCount?: number;
   motion?: MotionOptions;
   spinSpeed?: number;

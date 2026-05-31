@@ -68,8 +68,8 @@ export function normalizeMotion(motion = {}, aliases = {}) {
 }
 
 const SHAPES = ['ring', 'bar', 'old-fashioned', 'cruller'];
-const TOPPINGS = ['sprinkles', 'nuts', 'none'];
-const FINISHES = ['glaze', 'frosting'];
+const TOPPINGS = ['sprinkles', 'nuts', 'coconut', 'none'];
+const FINISHES = ['glaze', 'frosting', 'plain', 'none'];
 
 export const DEFAULTS = {
   shape: 'ring',
@@ -86,6 +86,7 @@ export const DEFAULTS = {
   topping: 'sprinkles',
   sprinkleColors: [0xffffff, 0xed4359, 0xee921a, 0x69c27e, 0x4087de, 0xaf62c1],
   nutColors: [0xe6c89a, 0xd9b382, 0xc79a5b, 0xb07d45, 0x8a5a32],
+  coconutColors: [0xfffaf0, 0xf3e7cf, 0xece0c8, 0xe6d3b3, 0xd8b88a],
   toppingCount: 150,
   reducedMotion: 'auto',
   pixelRatioCap: 2,
@@ -123,6 +124,7 @@ export function normalizeOptions(input = {}) {
     topping: oneOf(o.topping, TOPPINGS, 'sprinkles', 'topping'),
     sprinkleColors: (o.sprinkleColors || []).map((c) => parseColor(c, 0xffffff)),
     nutColors: (o.nutColors || []).map((c) => parseColor(c, 0xc79a5b)),
+    coconutColors: (o.coconutColors || []).map((c) => parseColor(c, 0xfffaf0)),
     toppingCount: clampInt(o.toppingCount, 0, 2000, DEFAULTS.toppingCount),
     reducedMotion: o.reducedMotion === true || o.reducedMotion === false ? o.reducedMotion : 'auto',
     pixelRatioCap: Number(o.pixelRatioCap) || 2,

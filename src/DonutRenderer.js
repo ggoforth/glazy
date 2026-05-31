@@ -73,7 +73,7 @@ export class DonutRenderer {
     this.spinner.add(shape.group);
     this._shape = shape;
 
-    const topping = makeTopping(opts.topping, THREE, shape.topSurface, opts, rng);
+    const topping = makeTopping(opts.topping, THREE, shape.topSurface, opts, rng, shape.toppingScale ?? 1);
     if (topping) { this.spinner.add(topping.mesh); this._topping = topping; }
 
     this.camera = buildCamera(THREE, shape.frame);

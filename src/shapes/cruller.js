@@ -52,10 +52,12 @@ export function makeCruller(THREE, opts, rng) {
   group.add(dough);
 
   // glaze: same twist, a touch larger so it sits just outside the dough ridges
-  const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,

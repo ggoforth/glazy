@@ -12,12 +12,19 @@ const fakeSampler = (THREE) => ({
 });
 
 describe('toppings', () => {
-  it('registers sprinkles, nuts, none', () => {
-    expect(Object.keys(toppings)).toEqual(expect.arrayContaining(['sprinkles', 'nuts', 'none']));
+  it('registers sprinkles, nuts, coconut, none', () => {
+    expect(Object.keys(toppings)).toEqual(expect.arrayContaining(['sprinkles', 'nuts', 'coconut', 'none']));
   });
   it('none returns null mesh', () => {
     const THREE = makeMockThree();
     expect(makeTopping('none', THREE, fakeSampler(THREE), { topping: 'none' }, makeRng(1))).toBe(null);
+  });
+  it('coconut builds an instanced mesh with the requested count', () => {
+    const THREE = makeMockThree();
+    const built = makeTopping('coconut', THREE, fakeSampler(THREE),
+      { topping: 'coconut', toppingCount: 30, coconutColors: [0xfffaf0, 0xf3e7cf] }, makeRng(1));
+    expect(built.mesh).toBeTruthy();
+    expect(built.mesh.count).toBe(30);
   });
   it('sprinkles builds an instanced mesh with the requested count', () => {
     const THREE = makeMockThree();

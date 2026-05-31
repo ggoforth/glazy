@@ -127,8 +127,8 @@ function normalizeMotion(motion = {}, aliases = {}) {
 }
 
 const SHAPES = ['ring', 'bar', 'old-fashioned', 'cruller'];
-const TOPPINGS = ['sprinkles', 'nuts', 'none'];
-const FINISHES = ['glaze', 'frosting'];
+const TOPPINGS = ['sprinkles', 'nuts', 'coconut', 'none'];
+const FINISHES = ['glaze', 'frosting', 'plain', 'none'];
 
 const DEFAULTS = {
   shape: 'ring',
@@ -145,6 +145,7 @@ const DEFAULTS = {
   topping: 'sprinkles',
   sprinkleColors: [0xffffff, 0xed4359, 0xee921a, 0x69c27e, 0x4087de, 0xaf62c1],
   nutColors: [0xe6c89a, 0xd9b382, 0xc79a5b, 0xb07d45, 0x8a5a32],
+  coconutColors: [0xfffaf0, 0xf3e7cf, 0xece0c8, 0xe6d3b3, 0xd8b88a],
   toppingCount: 150,
   reducedMotion: 'auto',
   pixelRatioCap: 2,
@@ -182,6 +183,7 @@ function normalizeOptions(input = {}) {
     topping: oneOf(o.topping, TOPPINGS, 'sprinkles', 'topping'),
     sprinkleColors: (o.sprinkleColors || []).map((c) => parseColor(c, 0xffffff)),
     nutColors: (o.nutColors || []).map((c) => parseColor(c, 0xc79a5b)),
+    coconutColors: (o.coconutColors || []).map((c) => parseColor(c, 0xfffaf0)),
     toppingCount: clampInt(o.toppingCount, 0, 2000, DEFAULTS.toppingCount),
     reducedMotion: o.reducedMotion === true || o.reducedMotion === false ? o.reducedMotion : 'auto',
     pixelRatioCap: Number(o.pixelRatioCap) || 2,
@@ -319,16 +321,18 @@ function makeDoughMaterial(THREE, opts, rng) {
 const FINISH = {
   glaze:    { roughness: 0.30, clearcoat: 1.0, clearcoatRoughness: 0.28, bumpScale: 0.006, normalScale: 0.35 },
   frosting: { roughness: 0.62, clearcoat: 0.0, clearcoatRoughness: 1.0,  bumpScale: 0.018, normalScale: 0.7 },
+  // plain: a thin, mostly-opaque white frosting (color is fixed white, ignores `frost`)
+  plain:    { roughness: 0.55, clearcoat: 0.08, clearcoatRoughness: 0.85, bumpScale: 0.01, normalScale: 0.45, color: 0xfbf7ee },
 };
 
-// dripGlsl: a snippet defining `float dripH;` and `float dripCoord;` in frosting-local space.
+// dripGlsl: a snippet defining `float dripH;` and `float dripEdge;` in frosting-local space.
 // Each shape supplies it (ring uses ring-angle; bar uses a perimeter param).
 function makeFrostMaterial(THREE, opts, rng, dripGlsl) {
   const f = FINISH[opts.frostFinish] || FINISH.glaze;
   const bumpMap = frostBumpTexture(THREE, rng, opts.glazeTextureScale);
   const normalMap = frostNormalTexture(THREE, rng, opts.glazeTextureScale);
   const mat = new THREE.MeshPhysicalMaterial({
-    color: opts.frost,
+    color: f.color ?? opts.frost,
     roughness: opts.frostRoughness ?? f.roughness,
     clearcoat: opts.frostClearcoat ?? f.clearcoat,
     clearcoatRoughness: f.clearcoatRoughness,
@@ -441,12 +445,14 @@ function makeRing(THREE, opts, rng) {
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, FROST_TUBE$2, 48, 260),
-    makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
-  frost.rotation.x = Math.PI / 2;
-  frost.position.y = FROST_RISE;
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING$2, FROST_TUBE$2, 48, 260),
+      makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
+    frost.rotation.x = Math.PI / 2;
+    frost.position.y = FROST_RISE;
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
@@ -463,7 +469,7 @@ function makeRing(THREE, opts, rng) {
 // tear. The capsule is laid along X and squashed in Y into a flat bar.
 const LEN = 2.6;    // total length (X)
 const WID = 1.15;   // width (Z) = capsule diameter
-const HEIGHT = 0.5; // total height (Y) after flattening
+const HEIGHT = 0.64; // total height (Y) after flattening
 
 // radius r, cylinder length l, vertical squash so total height becomes `height`.
 function flatCapsule(THREE, r, l, height) {
@@ -492,15 +498,18 @@ function makeBar(THREE, opts, rng) {
 
   // glaze: a thin concentric shell hugging the body, clipped to a top cap
   const rf = r + 0.015, hf = HEIGHT + 0.02;
-  const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = flatCapsule(THREE, rf, LEN - WID, hf);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, barDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
+    toppingScale: 0.6, // the bar is smaller than the ring, so shrink its toppings
     // scatter over the glazed crown along the whole length, out to the rounded ends
-    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.15 }),
+    topSurface: capsuleTopSampler(THREE, { a: (LEN - WID) / 2, R: rf, hs: hf / (2 * rf), clipY: 0.18 }),
     frame: { fov: 32, position: [0, 2.7, 5.6], target: [0, -0.05, 0] },
     dispose() {},
   };
@@ -561,10 +570,12 @@ function makeOldFashioned(THREE, opts, rng) {
   group.add(dough);
 
   // glaze: same craggy field, a touch larger so it coats just outside the dough
-  const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING$1, FROST_TUBE$1, 32, 260), RING$1, seeds);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING$1, FROST_TUBE$1, 32, 260), RING$1, seeds);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
@@ -625,10 +636,12 @@ function makeCruller(THREE, opts, rng) {
   group.add(dough);
 
   // glaze: same twist, a touch larger so it sits just outside the dough ridges
-  const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
-  const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
+    const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
@@ -677,7 +690,7 @@ function scatterInstances(THREE, geometry, material, placements, palette, rng, o
 
 // src/toppings/sprinkles.js
 
-function makeSprinkles(THREE, sampler, opts, rng) {
+function makeSprinkles(THREE, sampler, opts, rng, scale = 1) {
   const placements = sampler.sample(opts.toppingCount, rng);
   const geometry = new THREE.CylinderGeometry(0.03, 0.03, 0.16, 8);
   const material = new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.02 });
@@ -688,23 +701,39 @@ function makeSprinkles(THREE, sampler, opts, rng) {
     const t2 = new THREE.Vector3().crossVectors(p.normal, t1).normalize();
     const ang = r() * Math.PI * 2;
     const dir = new THREE.Vector3().addScaledVector(t1, Math.cos(ang)).addScaledVector(t2, Math.sin(ang)).normalize();
-    dummy.position.copy(p.position).addScaledVector(p.normal, 0.012);
+    dummy.position.copy(p.position).addScaledVector(p.normal, 0.012 * scale);
     dummy.quaternion.setFromUnitVectors(up, dir);
-    dummy.scale.setScalar(0.8 + r() * 0.55);
+    dummy.scale.setScalar((0.8 + r() * 0.55) * scale);
   });
 }
 
 // src/toppings/nuts.js
 
-function makeNuts(THREE, sampler, opts, rng) {
+function makeNuts(THREE, sampler, opts, rng, scale = 1) {
   const placements = sampler.sample(opts.toppingCount, rng);
   const geometry = new THREE.IcosahedronGeometry(0.055, 0);
   const material = new THREE.MeshStandardMaterial({ roughness: 0.72, metalness: 0.0, flatShading: true });
   return scatterInstances(THREE, geometry, material, placements, opts.nutColors, rng, (dummy, p, r) => {
     // rest on the surface with a random tumble + irregular "chopped" scale
-    dummy.position.copy(p.position).addScaledVector(p.normal, 0.01);
+    dummy.position.copy(p.position).addScaledVector(p.normal, 0.01 * scale);
     dummy.rotation.set(r() * Math.PI * 2, r() * Math.PI * 2, r() * Math.PI * 2);
-    dummy.scale.set(0.7 + r() * 0.85, 0.5 + r() * 0.45, 0.7 + r() * 0.85);
+    dummy.scale.set((0.7 + r() * 0.85) * scale, (0.5 + r() * 0.45) * scale, (0.7 + r() * 0.85) * scale);
+  });
+}
+
+// src/toppings/coconut.js
+
+// Coconut flakes: thin flat shavings tossed over the surface, mostly lying flat
+// with a slight random curl. Pale white/cream with a few toasted edges.
+function makeCoconut(THREE, sampler, opts, rng, scale = 1) {
+  const placements = sampler.sample(opts.toppingCount, rng);
+  const geometry = new THREE.BoxGeometry(0.11, 0.012, 0.055);
+  const material = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.0 });
+  return scatterInstances(THREE, geometry, material, placements, opts.coconutColors, rng, (dummy, p, r) => {
+    // rest flat-ish on the surface: thin axis up, small random tilt + random spin
+    dummy.position.copy(p.position).addScaledVector(p.normal, 0.008 * scale);
+    dummy.rotation.set((r() - 0.5) * 0.7, r() * Math.PI * 2, (r() - 0.5) * 0.7);
+    dummy.scale.set((0.85 + r() * 0.6) * scale, scale, (0.85 + r() * 0.7) * scale);
   });
 }
 
@@ -713,12 +742,15 @@ function makeNuts(THREE, sampler, opts, rng) {
 const toppings = {
   sprinkles: makeSprinkles,
   nuts: makeNuts,
+  coconut: makeCoconut,
   none: () => null,
 };
 
-function makeTopping(name, THREE, sampler, opts, rng) {
+// `scale` lets a shape size its toppings to its own proportions (e.g. the bar
+// uses smaller toppings than the ring).
+function makeTopping(name, THREE, sampler, opts, rng, scale = 1) {
   const factory = toppings[name] || toppings.sprinkles;
-  return factory(THREE, sampler, opts, rng);
+  return factory(THREE, sampler, opts, rng, scale);
 }
 
 // src/scene/lighting.js
@@ -910,7 +942,7 @@ class DonutRenderer {
     this.spinner.add(shape.group);
     this._shape = shape;
 
-    const topping = makeTopping(opts.topping, THREE, shape.topSurface, opts, rng);
+    const topping = makeTopping(opts.topping, THREE, shape.topSurface, opts, rng, shape.toppingScale ?? 1);
     if (topping) { this.spinner.add(topping.mesh); this._topping = topping; }
 
     this.camera = buildCamera(THREE, shape.frame);

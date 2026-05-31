@@ -137,7 +137,7 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 | `preset` | string \| null | `null` | merged under explicit options |
 | `dough` | color | `0xdf9f48` | accepts `0xRRGGBB`, `'#rrggbb'`, `'rrggbb'`, number |
 | `frost` | color | `0xed4359` | glaze/frosting color |
-| `frostFinish` | string | `'glaze'` | `'glaze'` or `'frosting'` |
+| `frostFinish` | string | `'glaze'` | `'glaze'`, `'frosting'`, `'plain'` (fixed white, opaque, matte), `'none'` (no frosting) |
 | `frostRoughness` | number | finish-dependent | clamped `[0,1]` |
 | `frostClearcoat` | number | finish-dependent | clamped `[0,1]` |
 | `glazeTextureScale` | number | `1` | surface-relief strength |
@@ -145,9 +145,10 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 | `doughGrain` | number | `1` | grain bump intensity |
 | `crust` | bool \| number | `true` | crust-tone strength (`true` is the default amount) |
 | `fillLight` | color | `0xffe6ef` | fill-light tint |
-| `topping` | string | `'sprinkles'` | `'sprinkles'`, `'nuts'`, `'none'` |
+| `topping` | string | `'sprinkles'` | `'sprinkles'`, `'nuts'`, `'coconut'`, `'none'` |
 | `sprinkleColors` | color[] | brand palette | |
 | `nutColors` | color[] | tan to walnut | |
+| `coconutColors` | color[] | white to toasted | flake colors |
 | `toppingCount` | int | `150` | clamped `[0, 2000]` |
 | `motion` | object | see below | per-behavior motion and interaction config |
 | `spinSpeed` | number | `0.004` | alias for `motion.spin.speed` |

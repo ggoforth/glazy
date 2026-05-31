@@ -1,7 +1,7 @@
 // src/toppings/sprinkles.js
 import { scatterInstances } from './scatter.js';
 
-export function makeSprinkles(THREE, sampler, opts, rng) {
+export function makeSprinkles(THREE, sampler, opts, rng, scale = 1) {
   const placements = sampler.sample(opts.toppingCount, rng);
   const geometry = new THREE.CylinderGeometry(0.03, 0.03, 0.16, 8);
   const material = new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.02 });
@@ -12,8 +12,8 @@ export function makeSprinkles(THREE, sampler, opts, rng) {
     const t2 = new THREE.Vector3().crossVectors(p.normal, t1).normalize();
     const ang = r() * Math.PI * 2;
     const dir = new THREE.Vector3().addScaledVector(t1, Math.cos(ang)).addScaledVector(t2, Math.sin(ang)).normalize();
-    dummy.position.copy(p.position).addScaledVector(p.normal, 0.012);
+    dummy.position.copy(p.position).addScaledVector(p.normal, 0.012 * scale);
     dummy.quaternion.setFromUnitVectors(up, dir);
-    dummy.scale.setScalar(0.8 + r() * 0.55);
+    dummy.scale.setScalar((0.8 + r() * 0.55) * scale);
   });
 }

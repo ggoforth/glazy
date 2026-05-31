@@ -22,12 +22,14 @@ export function makeRing(THREE, opts, rng) {
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  const frost = new THREE.Mesh(new THREE.TorusGeometry(RING, FROST_TUBE, 48, 260),
-    makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
-  frost.rotation.x = Math.PI / 2;
-  frost.position.y = FROST_RISE;
-  frost.castShadow = true;
-  group.add(frost);
+  if (opts.frostFinish !== 'none') {
+    const frost = new THREE.Mesh(new THREE.TorusGeometry(RING, FROST_TUBE, 48, 260),
+      makeFrostMaterial(THREE, opts, rng, ringDripGlsl()));
+    frost.rotation.x = Math.PI / 2;
+    frost.position.y = FROST_RISE;
+    frost.castShadow = true;
+    group.add(frost);
+  }
 
   return {
     group,
