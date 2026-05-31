@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeMockThree, disposedRegistry } from './mockThree.js';
+import { makeMockThree } from './mockThree.js';
 import { disposeObject } from '../src/dispose.js';
 
 describe('disposeObject', () => {
