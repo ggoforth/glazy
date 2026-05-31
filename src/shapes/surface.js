@@ -26,3 +26,22 @@ export function torusTopSampler(THREE, { ring, tube, rise, minNormalY = 0.22 }) 
     },
   };
 }
+
+// Top-face sampler for the bar: scatter across the rounded top plane.
+export function barTopSampler(THREE, { halfLen, halfWid, topY }) {
+  return {
+    sample(count, rng) {
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        const x = (rng() * 2 - 1) * halfLen;
+        const z = (rng() * 2 - 1) * halfWid;
+        out.push({
+          position: new THREE.Vector3(x, topY, z),
+          normal: new THREE.Vector3(0, 1, 0),
+          tangent: new THREE.Vector3(1, 0, 0),
+        });
+      }
+      return out;
+    },
+  };
+}
