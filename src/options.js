@@ -32,3 +32,34 @@ export function clampInt(value, min, max, fallback) {
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, Math.round(n)));
 }
+
+export const DEFAULT_MOTION = {
+  spin: { enabled: true, speed: 0.004, direction: 1 },
+  wobble: { enabled: true, amplitude: 0.05, speed: 0.9 },
+  bob: { enabled: true, amplitude: 0.045, speed: 1.1 },
+  lean: { enabled: true, strength: 0.16, ease: 0.045, source: 'window' },
+};
+
+function mergeBehavior(def, raw) {
+  if (raw === true || raw === undefined) return { ...def };
+  if (raw === false) return { ...def, enabled: false };
+  return { ...def, ...raw };
+}
+
+export function normalizeMotion(motion = {}, aliases = {}) {
+  // 1. start from defaults overlaid with flat aliases
+  const aliased = {
+    spin: aliases.spinSpeed !== undefined ? { speed: aliases.spinSpeed } : undefined,
+    wobble: aliases.wobble !== undefined ? (aliases.wobble ? true : false) : undefined,
+    lean: aliases.mouseLean !== undefined ? (aliases.mouseLean ? true : false) : undefined,
+  };
+  const out = {};
+  for (const key of ['spin', 'wobble', 'bob', 'lean']) {
+    // aliases first, then structured motion overrides
+    let merged = mergeBehavior(DEFAULT_MOTION[key], aliased[key]);
+    merged = mergeBehavior(merged, motion[key]);
+    out[key] = merged;
+  }
+  if (out.lean.source !== 'element') out.lean.source = 'window';
+  return out;
+}
