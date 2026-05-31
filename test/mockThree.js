@@ -34,7 +34,7 @@ class InstancedMesh extends Mesh {
     this.instanceColor = null; }
   setMatrixAt() {} setColorAt() {}
 }
-const geom = () => new Disposable();
+class Geometry extends Disposable {}
 class CanvasTexture extends Disposable { constructor() { super(); this.repeat = { set() {} }; } }
 
 export function makeMockThree() {
@@ -46,8 +46,8 @@ export function makeMockThree() {
     PerspectiveCamera: class { constructor() { this.position = new Vector3(); this.aspect = 1; } updateProjectionMatrix() {} lookAt() {} },
     AmbientLight: class extends Object3D {}, DirectionalLight: class extends Object3D {
       constructor() { super(); this.shadow = { mapSize: { set() {} }, camera: {}, bias: 0, radius: 0 }; } },
-    TorusGeometry: geom, CylinderGeometry: geom, IcosahedronGeometry: geom, BoxGeometry: geom,
-    SphereGeometry: geom, ExtrudeGeometry: geom, Shape: class { constructor() {} absarc() {} moveTo() {} lineTo() {} },
+    TorusGeometry: Geometry, CylinderGeometry: Geometry, IcosahedronGeometry: Geometry, BoxGeometry: Geometry,
+    SphereGeometry: Geometry, ExtrudeGeometry: Geometry, Shape: class { constructor() {} absarc() {} moveTo() {} lineTo() {} },
     MeshStandardMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
     MeshPhysicalMaterial: class extends Disposable { constructor(o = {}) { super(); Object.assign(this, o); } },
     InstancedBufferAttribute: class { constructor(a) { this.array = a; this.needsUpdate = false; } },
