@@ -38,7 +38,19 @@ class InstancedMesh extends Mesh {
     this.instanceColor = null; }
   setMatrixAt() {} setColorAt() {}
 }
-class Geometry extends Disposable {}
+class Geometry extends Disposable {
+  constructor() {
+    super();
+    // empty position buffer → displacement loops (which iterate count) safely no-op
+    this.attributes = { position: { count: 0, getX: () => 0, getY: () => 0, getZ: () => 0, setXYZ() {}, needsUpdate: false } };
+  }
+  translate() { return this; }
+  rotateX() { return this; }
+  rotateY() { return this; }
+  rotateZ() { return this; }
+  scale() { return this; }
+  computeVertexNormals() { return this; }
+}
 class CanvasTexture extends Disposable { constructor() { super(); this.repeat = { set() {} }; } }
 
 // jsdom has no 2D canvas backend (the optional `canvas` npm pkg is not installed),

@@ -3,53 +3,65 @@ import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
 import { torusTopSampler } from './surface.js';
 
-const RING = 1.0, DOUGH_TUBE = 0.5, FROST_TUBE = 0.56, FROST_RISE = 0.08, FROST_CLIP_Y = 0.10;
-const FLUTES = 6;
+// Chunky raised ring with a scalloped "blossom" edge and deep irregular cracks —
+// the signature old-fashioned look — then dipped in a glaze that follows the cracks.
+const RING = 0.92, DOUGH_TUBE = 0.52, FROST_TUBE = 0.55;
 
-// Push vertices in/out by ring-angle to carve flutes + add craggy noise.
-function fluteGeometry(THREE, geo, rng) {
-  if (!geo.attributes || !geo.attributes.position) return geo;
+// Displace a torus into a craggy old-fashioned. Works in the hole-axis-Y frame
+// (ring in the X/Z plane). `seeds` are shared between dough and glaze so their
+// cracks line up. Displacement is along the surface normal.
+function craggy(THREE, geo, ring, seeds) {
+  geo.rotateX(Math.PI / 2); // hole axis -> Y, ring lies in X/Z
   const pos = geo.attributes.position;
-  const v = new THREE.Vector3();
+  const [sA, sB, sC] = seeds;
   for (let i = 0; i < pos.count; i++) {
-    v.set(pos.getX(i), pos.getY(i), pos.getZ(i));
-    const ang = Math.atan2(v.z, v.x);               // around the ring (hole axis Y after rotation handled by caller)
-    // scale radius in/out by a 6-lobe flute plus a little per-vertex crag
-    const scale = (1 + 0.06 * Math.cos(ang * FLUTES)) * (1 + (rng() * 2 - 1) * 0.015);
-    pos.setXYZ(i, v.x * scale, v.y, v.z * scale);
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const u = Math.atan2(z, x);                 // angle around the ring
+    const lr = Math.hypot(x, z) - ring;         // radial offset from the tube centerline
+    const v = Math.atan2(y, lr);                // tube angle: 0 outer, +PI/2 top, PI inner
+    const cv = Math.cos(v), sv = Math.sin(v);
+    const nx = cv * Math.cos(u), ny = sv, nz = cv * Math.sin(u); // outward normal
+
+    const scallop = 0.05 * Math.cos(u * 9 + sA) + 0.025 * Math.cos(u * 5 + sB); // irregular blossom edge
+    const ridge = Math.cos(u * 13 + 1.2 * Math.sin(u * 3 + sB) + sB);     // irregular spacing
+    const crack = -0.1 * Math.pow(Math.max(0, ridge), 5.0);              // sharp deep valleys
+    const crag = 0.022 * (Math.sin(u * 8 + v * 5 + sC) + Math.sin(u * 15 - v * 4 + 1.0));
+    const topMask = 0.5 + 0.5 * sv;             // 1 at top, 0 underneath
+    const outMask = 0.5 + 0.5 * cv;             // 1 at outer rim, 0 at the hole
+    const disp = scallop * (0.5 + 0.5 * outMask) + crack * (0.35 + 0.65 * topMask) + crag;
+
+    pos.setXYZ(i, x + nx * disp, y + ny * disp, z + nz * disp);
   }
   pos.needsUpdate = true;
-  if (geo.computeVertexNormals) geo.computeVertexNormals();
+  geo.computeVertexNormals();
   return geo;
 }
 
+// Glaze dipped over the top; wavy lower edge lets the craggy underside show.
 function ofDripGlsl() {
-  const base = (FROST_CLIP_Y - FROST_RISE).toFixed(3);
   return `
-    float dripH = -vLocalPos.z;
-    float dripA = atan(vLocalPos.y, vLocalPos.x);
-    float dripEdge = ${base} + 0.07*sin(dripA*6.0) + 0.04*sin(dripA*11.0+0.7);`;
+    float dripH = vLocalPos.y;
+    float dripEdge = -0.13 + 0.06*sin(atan(vLocalPos.z, vLocalPos.x)*6.0) + 0.04*sin(atan(vLocalPos.z, vLocalPos.x)*11.0 + 0.7);`;
 }
 
 export function makeOldFashioned(THREE, opts, rng) {
   const group = new THREE.Group();
+  const seeds = [rng() * 6.283, rng() * 6.283, rng() * 6.283];
 
-  const doughGeo = fluteGeometry(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 40, 200), rng);
+  const doughGeo = craggy(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 32, 260), RING, seeds);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
-  dough.rotation.x = Math.PI / 2;
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  const frostGeo = fluteGeometry(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 40, 220), rng);
+  // glaze: same craggy field, a touch larger so it sits just outside the dough
+  const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 32, 260), RING, seeds);
   const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
-  frost.rotation.x = Math.PI / 2;
-  frost.position.y = FROST_RISE;
   frost.castShadow = true;
   group.add(frost);
 
   return {
     group,
-    topSurface: torusTopSampler(THREE, { ring: RING, tube: FROST_TUBE, rise: FROST_RISE, minNormalY: 0.25 }),
+    topSurface: torusTopSampler(THREE, { ring: RING, tube: FROST_TUBE, rise: 0, minNormalY: 0.3 }),
     frame: {},
     dispose() {},
   };
