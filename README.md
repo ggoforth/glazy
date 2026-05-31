@@ -142,7 +142,7 @@ Resolution order is `defaults`, then `preset`, then explicit options. When a fla
 | `frostClearcoat` | number | finish-dependent | clamped `[0,1]` |
 | `glazeTextureScale` | number | `1` | surface-relief strength |
 | `doughRoughness` | number | `0.82` | clamped `[0,1]` |
-| `doughGrain` | number | `1` | grain bump intensity |
+| `doughGrain` | number | `1` | surface bumpiness (geometric); `0` is smooth |
 | `crust` | bool \| number | `true` | crust-tone strength (`true` is the default amount) |
 | `fillLight` | color | `0xffe6ef` | fill-light tint |
 | `topping` | string | `'sprinkles'` | `'sprinkles'`, `'nuts'`, `'coconut'`, `'none'` |

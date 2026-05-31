@@ -1,6 +1,7 @@
 // src/shapes/oldFashioned.js
 import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
+import { applyGrain } from '../materials/textures.js';
 import { torusTopSampler } from './surface.js';
 
 // An old-fashioned (sour-cream cake) doughnut: a chunky ring broken into big
@@ -50,14 +51,15 @@ export function makeOldFashioned(THREE, opts, rng) {
   const group = new THREE.Group();
   const seeds = [rng() * 6.283, rng() * 6.283, rng() * 6.283];
 
-  const doughGeo = craggy(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 32, 260), RING, seeds);
+  const doughGeo = applyGrain(craggy(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 32, 260), RING, seeds), opts.doughGrain, rng);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  // glaze: same craggy field, a touch larger so it coats just outside the dough
+  // glaze: same craggy field, just outside the dough ('plain' hugs tighter)
   if (opts.frostFinish !== 'none') {
-    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 32, 260), RING, seeds);
+    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE + 0.012 : FROST_TUBE;
+    const frostGeo = craggy(THREE, new THREE.TorusGeometry(RING, fTube, 32, 260), RING, seeds);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, ofDripGlsl()));
     frost.castShadow = true;
     group.add(frost);

@@ -1,6 +1,7 @@
 // src/shapes/cruller.js
 import { makeDoughMaterial } from '../materials/doughMaterial.js';
 import { makeFrostMaterial } from '../materials/frostMaterial.js';
+import { applyGrain } from '../materials/textures.js';
 import { torusTopSampler } from './surface.js';
 
 // A French / old-fashioned cruller: a ring whose cross-section is fluted into a
@@ -46,14 +47,15 @@ export function makeCruller(THREE, opts, rng) {
   const group = new THREE.Group();
   const seeds = [rng() * 6.283, rng() * 6.283];
 
-  const doughGeo = twist(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 36, 420), RING, 0.1, seeds);
+  const doughGeo = applyGrain(twist(THREE, new THREE.TorusGeometry(RING, DOUGH_TUBE, 36, 420), RING, 0.1, seeds), opts.doughGrain, rng);
   const dough = new THREE.Mesh(doughGeo, makeDoughMaterial(THREE, opts, rng));
   dough.castShadow = true; dough.receiveShadow = true;
   group.add(dough);
 
-  // glaze: same twist, a touch larger so it sits just outside the dough ridges
+  // glaze: same twist, just outside the dough ridges ('plain' hugs tighter)
   if (opts.frostFinish !== 'none') {
-    const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, FROST_TUBE, 36, 420), RING, 0.1, seeds);
+    const fTube = opts.frostFinish === 'plain' ? DOUGH_TUBE + 0.012 : FROST_TUBE;
+    const frostGeo = twist(THREE, new THREE.TorusGeometry(RING, fTube, 36, 420), RING, 0.1, seeds);
     const frost = new THREE.Mesh(frostGeo, makeFrostMaterial(THREE, opts, rng, crullerDripGlsl()));
     frost.castShadow = true;
     group.add(frost);

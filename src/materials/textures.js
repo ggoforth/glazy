@@ -58,8 +58,32 @@ function tex(THREE, canvas, rx, ry, colorSpace) {
 
 // Public builders. `rng` makes texture generation deterministic under `seed`.
 export function doughBumpTexture(THREE, rng, grain = 1) {
-  const canvas = noiseCanvas(256, { rng, blobs: 150, blobAmp: 74, blobMin: 5, blobMax: 20, grain: 26 * grain });
-  return tex(THREE, canvas, 10, 3);
+  const canvas = noiseCanvas(256, { rng, blobs: 120, blobAmp: 60 * grain, blobMin: 6, blobMax: 22, grain: 22 * grain });
+  return tex(THREE, canvas, 8, 3);
+}
+
+// Real geometric grain: nudge each vertex along its normal by a smooth pseudo-
+// noise field so the dough surface is visibly bumpy (works on any renderer, not
+// just GPUs that support bump-map derivatives). Mutates and returns `geo`.
+export function applyGrain(geo, grain, rng) {
+  if (!geo.attributes || !geo.attributes.position || !grain) return geo;
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  if (!nor) return geo;
+  const amp = 0.018 * grain;
+  const s1 = 8 + rng() * 4, s2 = 13 + rng() * 5, s3 = 19 + rng() * 6;
+  const p1 = rng() * 6.28, p2 = rng() * 6.28;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    // smooth-ish lumpy field from products/sums of sines of position
+    const n = Math.sin(x * s1 + p1) * Math.sin(y * s2) * Math.sin(z * s1 + p2)
+      + 0.5 * Math.sin(x * s3) * Math.sin(z * s2 + p1);
+    const d = n * amp;
+    pos.setXYZ(i, x + nor.getX(i) * d, y + nor.getY(i) * d, z + nor.getZ(i) * d);
+  }
+  pos.needsUpdate = true;
+  if (geo.computeVertexNormals) geo.computeVertexNormals();
+  return geo;
 }
 
 export function frostBumpTexture(THREE, rng, scale = 1) {
