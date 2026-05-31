@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><title>glazy · auto-init</title>
+<style>body{margin:0;background:#faf7f2;display:grid;grid-template-columns:repeat(2,1fr)}
+.donut-stage,[data-donut]{position:relative;height:50vh}</style></head><body>
+  <div data-donut data-preset="strawberry"></div>
+  <div data-donut data-preset="blueberry"></div>
+  <div data-donut data-preset="chocolate" data-shape="bar"></div>
+  <div data-donut data-preset="matcha" data-shape="old-fashioned"></div>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="../dist/glazy.umd.js"></script>
+  <!-- UMD auto-inits [data-donut] on DOMContentLoaded -->
+</body></html>
