@@ -7,6 +7,7 @@ export function warnOnce(msg) {
   _warned.add(msg);
   console.warn(`[glazy] ${msg}`);
 }
+export function _resetWarned() { _warned = new Set(); }
 
 export function parseColor(value, fallback) {
   if (typeof value === 'number' && Number.isFinite(value)) return value & 0xffffff;
@@ -52,8 +53,8 @@ export function normalizeMotion(motion = {}, aliases = {}) {
   // 1. start from defaults overlaid with flat aliases
   const aliased = {
     spin: aliases.spinSpeed !== undefined ? { speed: aliases.spinSpeed } : undefined,
-    wobble: aliases.wobble !== undefined ? (aliases.wobble ? true : false) : undefined,
-    lean: aliases.mouseLean !== undefined ? (aliases.mouseLean ? true : false) : undefined,
+    wobble: aliases.wobble !== undefined ? parseBool(aliases.wobble, undefined) : undefined,
+    lean: aliases.mouseLean !== undefined ? parseBool(aliases.mouseLean, undefined) : undefined,
   };
   const out = {};
   for (const key of ['spin', 'wobble', 'bob', 'lean']) {
@@ -92,26 +93,34 @@ export const DEFAULTS = {
   materials: {},
 };
 
-function oneOf(value, allowed, fallback) {
-  return allowed.includes(value) ? value : fallback;
+function oneOf(value, allowed, fallback, label) {
+  if (allowed.includes(value)) return value;
+  if (value !== undefined && label) warnOnce(`unknown ${label} "${value}", using "${fallback}"`);
+  return fallback;
 }
 
 export function normalizeOptions(input = {}) {
   const o = { ...DEFAULTS, ...input };
   const out = {
     three: input.three ?? null,
-    shape: oneOf(o.shape, SHAPES, 'ring'),
+    shape: oneOf(o.shape, SHAPES, 'ring', 'shape'),
     dough: parseColor(o.dough, DEFAULTS.dough),
     frost: parseColor(o.frost, DEFAULTS.frost),
-    frostFinish: oneOf(o.frostFinish, FINISHES, 'glaze'),
+    frostFinish: oneOf(o.frostFinish, FINISHES, 'glaze', 'frostFinish'),
     frostRoughness: o.frostRoughness == null ? null : Number(o.frostRoughness),
     frostClearcoat: o.frostClearcoat == null ? null : Number(o.frostClearcoat),
     glazeTextureScale: Number(o.glazeTextureScale) || 1,
     doughRoughness: Number(o.doughRoughness),
     doughGrain: Number(o.doughGrain) || 1,
-    crust: o.crust === true || o.crust === false ? o.crust : Number(o.crust),
+    crust: (() => {
+      if (typeof o.crust === 'boolean') return o.crust;
+      const asBool = parseBool(o.crust, undefined);
+      if (asBool !== undefined) return asBool;
+      const n = Number(o.crust);
+      return Number.isFinite(n) ? n : DEFAULTS.crust;
+    })(),
     fillLight: parseColor(o.fillLight, DEFAULTS.fillLight),
-    topping: oneOf(o.topping, TOPPINGS, 'sprinkles'),
+    topping: oneOf(o.topping, TOPPINGS, 'sprinkles', 'topping'),
     sprinkleColors: (o.sprinkleColors || []).map((c) => parseColor(c, 0xffffff)),
     nutColors: (o.nutColors || []).map((c) => parseColor(c, 0xc79a5b)),
     toppingCount: clampInt(o.toppingCount, 0, 2000, DEFAULTS.toppingCount),

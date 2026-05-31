@@ -1,6 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeMotion, DEFAULT_MOTION } from '../src/options.js';
 
+describe('normalizeMotion – string aliases from data-* attributes (Issue 1)', () => {
+  it('wobble="false" string disables wobble', () => {
+    const m = normalizeMotion({}, { wobble: 'false' });
+    expect(m.wobble.enabled).toBe(false);
+  });
+  it('mouseLean="false" string disables lean', () => {
+    const m = normalizeMotion({}, { mouseLean: 'false' });
+    expect(m.lean.enabled).toBe(false);
+  });
+  it('wobble="true" string enables wobble', () => {
+    const m = normalizeMotion({}, { wobble: 'true' });
+    expect(m.wobble.enabled).toBe(true);
+  });
+  it('mouseLean="true" string enables lean', () => {
+    const m = normalizeMotion({}, { mouseLean: 'true' });
+    expect(m.lean.enabled).toBe(true);
+  });
+  it('no alias yields enabled defaults for wobble and lean', () => {
+    const m = normalizeMotion({}, {});
+    expect(m.wobble.enabled).toBe(true);
+    expect(m.lean.enabled).toBe(true);
+  });
+});
+
 describe('normalizeMotion', () => {
   it('returns defaults when given nothing', () => {
     expect(normalizeMotion({}, {})).toEqual(DEFAULT_MOTION);
