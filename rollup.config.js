@@ -1,7 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 
-const banner = '/*! glazy | MIT License | https://github.com/greggoforth/glazy */';
+const banner = '/*! glazy | MIT License | https://github.com/ggoforth/glazy */';
 const external = ['three'];
 const globals = { three: 'THREE' };
 

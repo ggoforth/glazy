@@ -1,4 +1,4 @@
-/*! glazy | MIT License | https://github.com/greggoforth/glazy */
+/*! glazy | MIT License | https://github.com/ggoforth/glazy */
 import * as bundledThree from 'three';
 
 // src/three-compat.js

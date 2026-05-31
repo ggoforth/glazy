@@ -1,4 +1,4 @@
-/*! glazy | MIT License | https://github.com/greggoforth/glazy */
+/*! glazy | MIT License | https://github.com/ggoforth/glazy */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('three')) :
   typeof define === 'function' && define.amd ? define(['exports', 'three'], factory) :
