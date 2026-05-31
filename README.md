@@ -3,7 +3,6 @@
 Spinning 3D donuts in a `<canvas>`, rendered with [Three.js](https://threejs.org).
 
 ![glazy hero](docs/media/hero.gif)
-<!-- TODO: capture from examples/controls.html -->
 
 Pick a preset, a shape, and a topping, or wire it up to live controls. Three.js is a peer dependency; glazy ships no other runtime dependencies and works from a plain `<script>` tag or as an ES module.
 
@@ -194,7 +193,6 @@ Named option sets, merged under any explicit fields, so individual options alway
 | `matcha` | glaze | green `0x8fbf6f` | golden `0xe7c98a` | nuts | cool `0xeef6e6` | ![matcha](docs/media/preset-matcha.png) |
 | `chocolate` | frosting | brown `0x4a2c1a` | dark `0x8a5a32` + crust | sprinkles | neutral `0xfff0e6` | ![chocolate](docs/media/preset-chocolate.png) |
 
-<!-- TODO: capture preset thumbnails from examples/autoinit.html -->
 
 ```js
 new DonutRenderer('#stage', { three: THREE, preset: 'matcha' });
@@ -208,7 +206,6 @@ new DonutRenderer('#stage', { three: THREE, preset: 'matcha' });
 | Bar | `'bar'` | ![bar](docs/media/shape-bar.png) |
 | Old-fashioned | `'old-fashioned'` | ![old-fashioned](docs/media/shape-old-fashioned.png) |
 
-<!-- TODO: capture shape thumbnails from examples/controls.html -->
 
 ## Three.js compatibility
 
