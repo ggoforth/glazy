@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project are documented here. This project adheres to [Semantic Versioning](https://semver.org).
 
+## [0.1.2] - 2026-05-31
+### Added
+- Topping: coconut flakes. Frost finishes: `plain` (thin translucent white) and
+  `none` (no frosting). Per-shape topping scale.
+### Changed
+- Bar rebuilt from a CapsuleGeometry (rounded ends, no seam tearing), taller,
+  with sprinkles along the full length.
+- Cruller twist tightened; old-fashioned reworked to a glazed, craggy, lobed cake.
+- `crust` now visibly browns the dough; `doughGrain` is real geometric surface
+  displacement (visible on any renderer).
+
 ## [0.1.1] - 2026-05-31
 ### Added
 - Committed browser-ready `dist/` so the bundles can be loaded over jsDelivr's

@@ -1129,7 +1129,7 @@ function autoInit$1(selector = '[data-donut]', factory) {
 
 // src/index.js
 
-const version = '0.1.1';
+const version = '0.1.2';
 
 // Bind the default factory so callers just pass a selector.
 // NOTE: importing this module has no side effects (see package.json
